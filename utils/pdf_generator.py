@@ -16,7 +16,7 @@ def generate_pdf(bill, output_path):
         spaceAfter=30,
         alignment=1
     )
-    elements.append(Paragraph("Fabrication Bill", header_style))
+    elements.append(Paragraph("Parate Welding Workshop", header_style))
 
     # Bill Info
     elements.append(Paragraph(f"Bill Number: {bill.bill_number}", styles['Normal']))
@@ -30,16 +30,21 @@ def generate_pdf(bill, output_path):
     elements.append(Spacer(1, 0.2*inch))
 
     # Items Table
-    items_data = [['Item', 'Quantity', 'Price', 'Amount']]
+    items_data = [['Item', 'Quantity/Weight', 'Unit', 'Price', 'Amount']]
     for item in bill.items:
+        quantity_text = f"{item['quantity']:.2f}"
+        if item['unit'] == 'kilogram':
+            quantity_text += ' kg'
+
         items_data.append([
             item['name'],
-            str(item['quantity']),
+            quantity_text,
+            item['unit'].title(),
             f"₹{item['price']:.2f}",
             f"₹{item['amount']:.2f}"
         ])
 
-    table = Table(items_data, colWidths=[4*inch, 1*inch, 1*inch, 1*inch])
+    table = Table(items_data, colWidths=[3*inch, 1.5*inch, 1*inch, 1*inch, 1*inch])
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),

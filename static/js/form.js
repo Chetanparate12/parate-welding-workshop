@@ -6,11 +6,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const div = document.createElement('div');
         div.className = 'row mb-3 item-row';
         div.innerHTML = `
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <input type="text" class="form-control" name="item_name[]" placeholder="Item Name" required>
             </div>
             <div class="col-md-2">
-                <input type="number" class="form-control" name="quantity[]" placeholder="Quantity" step="0.01" required>
+                <select class="form-control" name="unit[]" required>
+                    <option value="quantity">Quantity</option>
+                    <option value="kilogram">Kilogram</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <input type="number" class="form-control" name="quantity[]" placeholder="Amount" step="0.01" required>
             </div>
             <div class="col-md-2">
                 <input type="number" class="form-control" name="price[]" placeholder="Price" step="0.01" required>
@@ -18,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="col-md-2">
                 <input type="number" class="form-control" name="amount[]" placeholder="Amount" readonly>
             </div>
-            <div class="col-md-2">
+            <div class="col-md-1">
                 <button type="button" class="btn btn-danger btn-sm remove-item">Remove</button>
             </div>
         `;
@@ -32,6 +38,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const quantityInput = div.querySelector('input[name="quantity[]"]');
         const priceInput = div.querySelector('input[name="price[]"]');
         const amountInput = div.querySelector('input[name="amount[]"]');
+        const unitSelect = div.querySelector('select[name="unit[]"]');
+
+        function updateQuantityPlaceholder() {
+            const unit = unitSelect.value;
+            quantityInput.placeholder = unit === 'quantity' ? 'Quantity' : 'Weight (kg)';
+        }
 
         function calculateAmount() {
             const quantity = parseFloat(quantityInput.value) || 0;
@@ -40,9 +52,11 @@ document.addEventListener('DOMContentLoaded', function() {
             calculateTotals();
         }
 
+        unitSelect.addEventListener('change', updateQuantityPlaceholder);
         quantityInput.addEventListener('input', calculateAmount);
         priceInput.addEventListener('input', calculateAmount);
 
+        updateQuantityPlaceholder();
         return div;
     }
 

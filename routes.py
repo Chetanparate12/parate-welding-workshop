@@ -27,6 +27,7 @@ def generate_bill():
         for i in range(len(request.form.getlist('item_name[]'))):
             items.append({
                 'name': request.form.getlist('item_name[]')[i],
+                'unit': request.form.getlist('unit[]')[i],
                 'quantity': float(request.form.getlist('quantity[]')[i]),
                 'price': float(request.form.getlist('price[]')[i]),
                 'amount': float(request.form.getlist('amount[]')[i])
