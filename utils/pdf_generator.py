@@ -35,8 +35,8 @@ def generate_pdf(bill, output_path):
         items_data.append([
             item['name'],
             str(item['quantity']),
-            f"${item['price']:.2f}",
-            f"${item['amount']:.2f}"
+            f"₹{item['price']:.2f}",
+            f"₹{item['amount']:.2f}"
         ])
 
     table = Table(items_data, colWidths=[4*inch, 1*inch, 1*inch, 1*inch])
@@ -55,9 +55,9 @@ def generate_pdf(bill, output_path):
 
     # Payment Information
     elements.append(Paragraph("Payment Information:", styles['Heading2']))
-    elements.append(Paragraph(f"Total Amount: ${bill.total:.2f}", styles['Normal']))
-    elements.append(Paragraph(f"Amount Paid: ${bill.amount_paid:.2f}", styles['Normal']))
-    elements.append(Paragraph(f"Pending Amount: ${(bill.total - bill.amount_paid):.2f}", styles['Normal']))
+    elements.append(Paragraph(f"Total Amount: ₹{bill.total:.2f}", styles['Normal']))
+    elements.append(Paragraph(f"Amount Paid: ₹{bill.amount_paid:.2f}", styles['Normal']))
+    elements.append(Paragraph(f"Pending Amount: ₹{(bill.total - bill.amount_paid):.2f}", styles['Normal']))
     elements.append(Paragraph(f"Payment Status: {bill.payment_status.title()}", styles['Normal']))
 
     doc.build(elements)
