@@ -39,7 +39,7 @@ def generate_bill():
         new_bill = Bill(
             bill_number=bill_number,
             client_name=data['client_name'],
-            client_address=data['client_address'],
+            phone_number=data['phone_number'],
             items=items,
             subtotal=float(data['subtotal']),
             total=float(data['total']),

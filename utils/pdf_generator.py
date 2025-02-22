@@ -26,7 +26,7 @@ def generate_pdf(bill, output_path):
     # Client Info
     elements.append(Paragraph("Client Information:", styles['Heading2']))
     elements.append(Paragraph(f"Name: {bill.client_name}", styles['Normal']))
-    elements.append(Paragraph(f"Address: {bill.client_address}", styles['Normal']))
+    elements.append(Paragraph(f"Phone: {bill.phone_number}", styles['Normal']))
     elements.append(Spacer(1, 0.2*inch))
 
     # Items Table
