@@ -40,12 +40,14 @@ def generate_bill():
             bill_number=bill_number,
             client_name=data['client_name'],
             phone_number=data['phone_number'],
+            date=datetime.utcnow(),  # Explicitly set the date
             items=items,
             subtotal=float(data['subtotal']),
             total=float(data['total']),
             pdf_path=pdf_path
         )
 
+        # Generate PDF before saving to database to catch any PDF generation errors
         generate_pdf(new_bill, pdf_path)
 
         db.session.add(new_bill)
