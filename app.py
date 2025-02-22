@@ -13,6 +13,11 @@ db = SQLAlchemy(model_class=Base)
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev_key")
 
+# Remove the existing SQLite database file if it exists
+sqlite_path = "instance/bills.db"
+if os.path.exists(sqlite_path):
+    os.remove(sqlite_path)
+
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///bills.db")
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
