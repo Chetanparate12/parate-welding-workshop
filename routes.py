@@ -77,3 +77,42 @@ def generate_bill():
 def download_pdf(bill_id):
     bill = Bill.query.get_or_404(bill_id)
     return send_file(bill.pdf_path, as_attachment=True)
+
+@app.route('/edit_payment/<int:bill_id>')
+def edit_payment(bill_id):
+    bill = Bill.query.get_or_404(bill_id)
+    return render_template('edit_payment.html', bill=bill)
+
+@app.route('/update_payment/<int:bill_id>', methods=['POST'])
+def update_payment(bill_id):
+    try:
+        bill = Bill.query.get_or_404(bill_id)
+        new_payment = float(request.form['new_payment'])
+
+        # Validate payment amount
+        pending_amount = bill.total - bill.amount_paid
+        if new_payment <= 0 or new_payment > pending_amount:
+            flash('Invalid payment amount', 'danger')
+            return redirect(url_for('edit_payment', bill_id=bill.id))
+
+        # Update payment information
+        bill.amount_paid += new_payment
+
+        # Update payment status
+        if bill.amount_paid >= bill.total:
+            bill.payment_status = 'paid'
+        else:
+            bill.payment_status = 'partial'
+
+        db.session.commit()
+
+        # Generate updated PDF
+        generate_pdf(bill, bill.pdf_path)
+
+        flash('Payment updated successfully!', 'success')
+        return redirect(url_for('bills'))
+
+    except Exception as e:
+        app.logger.error(f"Error updating payment: {str(e)}")
+        flash('Error updating payment. Please try again.', 'danger')
+        return redirect(url_for('edit_payment', bill_id=bill_id))
