@@ -53,7 +53,11 @@ def generate_pdf(bill, output_path):
     elements.append(table)
     elements.append(Spacer(1, 0.2*inch))
 
-    # Totals
+    # Payment Information
+    elements.append(Paragraph("Payment Information:", styles['Heading2']))
     elements.append(Paragraph(f"Total Amount: ${bill.total:.2f}", styles['Normal']))
+    elements.append(Paragraph(f"Amount Paid: ${bill.amount_paid:.2f}", styles['Normal']))
+    elements.append(Paragraph(f"Pending Amount: ${(bill.total - bill.amount_paid):.2f}", styles['Normal']))
+    elements.append(Paragraph(f"Payment Status: {bill.payment_status.title()}", styles['Normal']))
 
     doc.build(elements)

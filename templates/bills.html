@@ -14,6 +14,9 @@
                         <th>Client Name</th>
                         <th>Date</th>
                         <th>Total</th>
+                        <th>Amount Paid</th>
+                        <th>Pending Amount</th>
+                        <th>Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -24,6 +27,13 @@
                         <td>{{ bill.client_name }}</td>
                         <td>{{ bill.date.strftime('%Y-%m-%d') }}</td>
                         <td>${{ "%.2f"|format(bill.total) }}</td>
+                        <td>${{ "%.2f"|format(bill.amount_paid) }}</td>
+                        <td>${{ "%.2f"|format(bill.total - bill.amount_paid) }}</td>
+                        <td>
+                            <span class="badge {% if bill.payment_status == 'paid' %}bg-success{% elif bill.payment_status == 'partial' %}bg-warning{% else %}bg-danger{% endif %}">
+                                {{ bill.payment_status.title() }}
+                            </span>
+                        </td>
                         <td>
                             <a href="{{ url_for('download_pdf', bill_id=bill.id) }}" class="btn btn-sm btn-secondary">
                                 Download PDF

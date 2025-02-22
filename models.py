@@ -11,3 +11,5 @@ class Bill(db.Model):
     subtotal = db.Column(db.Float, nullable=False)
     total = db.Column(db.Float, nullable=False)
     pdf_path = db.Column(db.String(200), nullable=False)
+    amount_paid = db.Column(db.Float, default=0.0)
+    payment_status = db.Column(db.String(20), default='pending')  # pending, partial, paid

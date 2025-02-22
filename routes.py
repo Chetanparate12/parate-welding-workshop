@@ -36,14 +36,26 @@ def generate_bill():
         pdf_filename = f"{bill_number}.pdf"
         pdf_path = os.path.join(UPLOAD_FOLDER, pdf_filename)
 
+        total = float(data['total'])
+        amount_paid = float(data['amount_paid'])
+
+        # Determine payment status
+        payment_status = 'pending'
+        if amount_paid >= total:
+            payment_status = 'paid'
+        elif amount_paid > 0:
+            payment_status = 'partial'
+
         new_bill = Bill(
             bill_number=bill_number,
             client_name=data['client_name'],
             phone_number=data['phone_number'],
-            date=datetime.utcnow(),  # Explicitly set the date
+            date=datetime.utcnow(),
             items=items,
             subtotal=float(data['subtotal']),
-            total=float(data['total']),
+            total=total,
+            amount_paid=amount_paid,
+            payment_status=payment_status,
             pdf_path=pdf_path
         )
 
