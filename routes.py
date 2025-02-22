@@ -116,3 +116,29 @@ def update_payment(bill_id):
         app.logger.error(f"Error updating payment: {str(e)}")
         flash('Error updating payment. Please try again.', 'danger')
         return redirect(url_for('edit_payment', bill_id=bill_id))
+
+@app.route('/delete_bill/<int:bill_id>', methods=['POST'])
+def delete_bill(bill_id):
+    try:
+        bill = Bill.query.get_or_404(bill_id)
+
+        # Only allow deletion of paid bills
+        if bill.payment_status != 'paid':
+            flash('Only fully paid bills can be deleted.', 'danger')
+            return redirect(url_for('bills'))
+
+        # Delete the PDF file if it exists
+        if os.path.exists(bill.pdf_path):
+            os.remove(bill.pdf_path)
+
+        # Delete the bill from database
+        db.session.delete(bill)
+        db.session.commit()
+
+        flash('Bill deleted successfully!', 'success')
+        return redirect(url_for('bills'))
+
+    except Exception as e:
+        app.logger.error(f"Error deleting bill: {str(e)}")
+        flash('Error deleting bill. Please try again.', 'danger')
+        return redirect(url_for('bills'))
