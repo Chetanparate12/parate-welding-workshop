@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const itemsList = document.getElementById('itemsList');
     const addItemBtn = document.getElementById('addItem');
-    
+
     function createItemRow() {
         const div = document.createElement('div');
         div.className = 'row mb-3 item-row';
@@ -49,14 +49,10 @@ document.addEventListener('DOMContentLoaded', function() {
     function calculateTotals() {
         const amounts = Array.from(document.getElementsByName('amount[]'))
             .map(input => parseFloat(input.value) || 0);
-        
-        const subtotal = amounts.reduce((sum, amount) => sum + amount, 0);
-        const tax = subtotal * 0.1; // 10% tax
-        const total = subtotal + tax;
 
+        const subtotal = amounts.reduce((sum, amount) => sum + amount, 0);
         document.getElementById('subtotal').value = subtotal.toFixed(2);
-        document.getElementById('tax').value = tax.toFixed(2);
-        document.getElementById('total').value = total.toFixed(2);
+        document.getElementById('total').value = subtotal.toFixed(2);
     }
 
     addItemBtn.addEventListener('click', function() {

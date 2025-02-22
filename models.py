@@ -9,6 +9,5 @@ class Bill(db.Model):
     date = db.Column(db.DateTime, default=datetime.utcnow)
     items = db.Column(db.JSON, nullable=False)
     subtotal = db.Column(db.Float, nullable=False)
-    tax = db.Column(db.Float, nullable=False)
     total = db.Column(db.Float, nullable=False)
     pdf_path = db.Column(db.String(200), nullable=False)

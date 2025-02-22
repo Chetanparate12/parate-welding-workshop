@@ -23,7 +23,7 @@ def generate_bill():
     try:
         data = request.form
         items = []
-        
+
         for i in range(len(request.form.getlist('item_name[]'))):
             items.append({
                 'name': request.form.getlist('item_name[]')[i],
@@ -42,13 +42,12 @@ def generate_bill():
             client_address=data['client_address'],
             items=items,
             subtotal=float(data['subtotal']),
-            tax=float(data['tax']),
             total=float(data['total']),
             pdf_path=pdf_path
         )
 
         generate_pdf(new_bill, pdf_path)
-        
+
         db.session.add(new_bill)
         db.session.commit()
 

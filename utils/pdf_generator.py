@@ -17,12 +17,12 @@ def generate_pdf(bill, output_path):
         alignment=1
     )
     elements.append(Paragraph("Fabrication Bill", header_style))
-    
+
     # Bill Info
     elements.append(Paragraph(f"Bill Number: {bill.bill_number}", styles['Normal']))
     elements.append(Paragraph(f"Date: {bill.date.strftime('%Y-%m-%d')}", styles['Normal']))
     elements.append(Spacer(1, 0.2*inch))
-    
+
     # Client Info
     elements.append(Paragraph("Client Information:", styles['Heading2']))
     elements.append(Paragraph(f"Name: {bill.client_name}", styles['Normal']))
@@ -54,8 +54,6 @@ def generate_pdf(bill, output_path):
     elements.append(Spacer(1, 0.2*inch))
 
     # Totals
-    elements.append(Paragraph(f"Subtotal: ${bill.subtotal:.2f}", styles['Normal']))
-    elements.append(Paragraph(f"Tax: ${bill.tax:.2f}", styles['Normal']))
-    elements.append(Paragraph(f"Total: ${bill.total:.2f}", styles['Normal']))
+    elements.append(Paragraph(f"Total Amount: ${bill.total:.2f}", styles['Normal']))
 
     doc.build(elements)
