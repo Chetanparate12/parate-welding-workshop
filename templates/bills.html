@@ -1,0 +1,39 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2>Generated Bills</h2>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Bill Number</th>
+                        <th>Client Name</th>
+                        <th>Date</th>
+                        <th>Total</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bill in bills %}
+                    <tr>
+                        <td>{{ bill.bill_number }}</td>
+                        <td>{{ bill.client_name }}</td>
+                        <td>{{ bill.date.strftime('%Y-%m-%d') }}</td>
+                        <td>${{ "%.2f"|format(bill.total) }}</td>
+                        <td>
+                            <a href="{{ url_for('download_pdf', bill_id=bill.id) }}" class="btn btn-sm btn-secondary">
+                                Download PDF
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
