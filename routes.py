@@ -65,6 +65,10 @@ def generate_bill():
 
         db.session.add(new_bill)
         db.session.commit()
+        
+        # Backup to Replit DB
+        from utils.db_backup import backup_bill_to_replit_db
+        backup_bill_to_replit_db(new_bill)
 
         flash('Bill generated successfully!', 'success')
         return redirect(url_for('bills'))
