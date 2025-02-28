@@ -19,3 +19,8 @@ def backup_bill_to_replit_db(bill):
             'amount_paid': bill.amount_paid,
             'payment_status': bill.payment_status
         }
+
+def delete_bill_from_replit_db(bill_number):
+    key = f"bill_{bill_number}"
+    if key in db:
+        del db[key]

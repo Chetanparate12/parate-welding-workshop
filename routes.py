@@ -111,6 +111,10 @@ def update_payment(bill_id):
 
         db.session.commit()
 
+        # Backup updated bill to Replit DB
+        from utils.db_backup import backup_bill_to_replit_db
+        backup_bill_to_replit_db(bill)
+
         # Generate updated PDF
         generate_pdf(bill, bill.pdf_path)
 
@@ -139,6 +143,10 @@ def delete_bill(bill_id):
         # Delete the bill from database
         db.session.delete(bill)
         db.session.commit()
+        
+        # Remove from Replit DB as well
+        from utils.db_backup import delete_bill_from_replit_db
+        delete_bill_from_replit_db(bill.bill_number)
 
         flash('Bill deleted successfully!', 'success')
         return redirect(url_for('bills'))
