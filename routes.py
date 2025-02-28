@@ -5,7 +5,12 @@ from app import app, db
 from models import Bill
 from utils.pdf_generator import generate_pdf
 
-UPLOAD_FOLDER = 'generated_pdfs'
+# Set up a persistent folder for PDFs in deployment
+if os.environ.get("REPLIT_DEPLOYMENT") == "1":
+    UPLOAD_FOLDER = '/home/runner/appdata/generated_pdfs'
+else:
+    UPLOAD_FOLDER = 'generated_pdfs'
+
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 

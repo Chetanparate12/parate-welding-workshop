@@ -13,12 +13,19 @@ db = SQLAlchemy(model_class=Base)
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev_key")
 
-# Remove the existing SQLite database file if it exists
+# Don't remove the database in production
 sqlite_path = "instance/bills.db"
-if os.path.exists(sqlite_path):
+if os.environ.get("REPLIT_DEPLOYMENT") != "1" and os.path.exists(sqlite_path) and os.environ.get("PRESERVE_DB") != "1":
     os.remove(sqlite_path)
 
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///bills.db")
+# Use a persistent database path for deployment
+if os.environ.get("REPLIT_DEPLOYMENT") == "1":
+    # In deployment, use a fixed path for persistence
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:////home/runner/appdata/bills.db"
+    # Create the directory if it doesn't exist
+    os.makedirs("/home/runner/appdata", exist_ok=True)
+else:
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///bills.db")
 
 # Restore data from Replit DB if SQLite is empty
 def restore_from_replit_db():
