@@ -57,12 +57,16 @@ def restore_from_replit_db():
                         )
                         db.session.add(new_bill)
                     db.session.commit()
+                    print(f"Successfully restored {len(bill_keys)} bills from Replit DB")
             except Exception as e:
                 print(f"Error restoring from Replit DB: {str(e)}")
                 # Continue without Replit DB if there's an error
-    except Exception as e:
-        print(f"Replit DB module not available: {str(e)}")
+    except ImportError:
+        print("Replit DB module not available")
         # Continue without Replit DB if it's not available
+    except Exception as e:
+        print(f"Error in restore_from_replit_db: {str(e)}")
+        # Continue without Replit DB if there's an error
 
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
