@@ -81,11 +81,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const itemsContainer = document.getElementById('items');
     const addItemButton = document.getElementById('addItem');
     const billForm = document.getElementById('billForm');
-    
+
     // Initialize
     calculateItemTotals();
     updateTotals();
-    
+
     // Add item button
     if (addItemButton) {
         addItemButton.addEventListener('click', function() {
@@ -114,66 +114,66 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </div>
             `;
-            
+
             itemsContainer.insertAdjacentHTML('beforeend', itemTemplate);
-            
+
             // Make all remove buttons visible
             document.querySelectorAll('.remove-item').forEach(button => {
                 button.style.display = 'block';
             });
-            
+
             // Add event listeners to the new item
             addItemEventListeners(itemsContainer.lastElementChild);
-            
+
             // Add focus to the new item's description field
             const newItem = itemsContainer.lastElementChild;
             const descriptionInput = newItem.querySelector('.description');
             if (descriptionInput) {
                 descriptionInput.focus();
             }
-            
+
             // Animate the new row
             newItem.style.opacity = '0';
             newItem.style.transform = 'translateY(20px)';
             newItem.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-            
+
             // Trigger reflow
             newItem.offsetHeight;
-            
+
             // Apply animation
             newItem.style.opacity = '1';
             newItem.style.transform = 'translateY(0)';
         });
     }
-    
+
     // Add event listeners to existing items
     document.querySelectorAll('.item').forEach(item => {
         addItemEventListeners(item);
     });
-    
+
     // Form submit validation
     if (billForm) {
         billForm.addEventListener('submit', function(event) {
             const amountPaid = parseFloat(document.getElementById('amount_paid').value) || 0;
             const total = parseFloat(document.getElementById('total').value) || 0;
-            
+
             if (amountPaid > total) {
                 event.preventDefault();
                 alert('Amount paid cannot be greater than the total amount.');
                 return false;
             }
-            
+
             // Add subtle loading animation
             const submitButton = billForm.querySelector('button[type="submit"]');
             if (submitButton) {
                 submitButton.disabled = true;
                 submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Generating...';
             }
-            
+
             return true;
         });
     }
-    
+
     // Event listeners for date input
     const dateInput = document.getElementById('date');
     if (dateInput && !dateInput.value) {
@@ -184,7 +184,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const dd = String(today.getDate()).padStart(2, '0');
         dateInput.value = `${yyyy}-${mm}-${dd}`;
     }
-    
+
     // Client name autocomplete
     const clientNameInput = document.getElementById('client_name');
     if (clientNameInput) {
@@ -200,34 +200,34 @@ document.addEventListener('DOMContentLoaded', function() {
             this.value = words.join(' ');
         });
     }
-    
+
     // Helper functions
     function addItemEventListeners(item) {
         const quantityInput = item.querySelector('.quantity');
         const priceInput = item.querySelector('.price');
         const removeButton = item.querySelector('.remove-item');
-        
+
         quantityInput.addEventListener('input', function() {
             calculateItemTotals();
             updateTotals();
         });
-        
+
         priceInput.addEventListener('input', function() {
             calculateItemTotals();
             updateTotals();
         });
-        
+
         removeButton.addEventListener('click', function() {
             // Animate removal
             item.style.opacity = '0';
             item.style.transform = 'translateX(20px)';
             item.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-            
+
             setTimeout(() => {
                 item.remove();
                 calculateItemTotals();
                 updateTotals();
-                
+
                 // Hide remove button if only one item remains
                 const items = document.querySelectorAll('.item');
                 if (items.length === 1) {
@@ -236,7 +236,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 300);
         });
     }
-    
+
     function calculateItemTotals() {
         document.querySelectorAll('.item').forEach(item => {
             const quantity = parseFloat(item.querySelector('.quantity').value) || 0;
@@ -245,42 +245,40 @@ document.addEventListener('DOMContentLoaded', function() {
             item.querySelector('.item-total').value = total.toFixed(2);
         });
     }
-    
+
     function updateTotals() {
         let subtotal = 0;
         document.querySelectorAll('.item-total').forEach(itemTotal => {
             subtotal += parseFloat(itemTotal.value) || 0;
         });
-        
-        const tax = subtotal * 0.18;
-        const total = subtotal + tax;
-        
+
+        const total = subtotal;
+
         // Update with animation
         animateValue('subtotal', parseFloat(document.getElementById('subtotal').value) || 0, subtotal);
-        animateValue('tax', parseFloat(document.getElementById('tax').value) || 0, tax);
         animateValue('total', parseFloat(document.getElementById('total').value) || 0, total);
     }
-    
+
     function animateValue(elementId, start, end) {
         const element = document.getElementById(elementId);
         if (!element) return;
-        
+
         const duration = 500;
         const startTime = new Date().getTime();
-        
+
         const timer = setInterval(function() {
             const time = new Date().getTime() - startTime;
             const value = easeOutCubic(time, start, end - start, duration);
-            
+
             element.value = value.toFixed(2);
-            
+
             if (time >= duration) {
                 clearInterval(timer);
                 element.value = end.toFixed(2);
             }
         }, 16);
     }
-    
+
     // Easing function
     function easeOutCubic(t, b, c, d) {
         t /= d;
