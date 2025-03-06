@@ -153,6 +153,16 @@ def update_payment(bill_id):
         else:
             bill.payment_status = 'partial'
 
+        # Record this payment in payment history
+        from models import PaymentHistory
+        payment_record = PaymentHistory(
+            bill_id=bill.id,
+            bill_number=bill.bill_number,
+            client_name=bill.client_name,
+            payment_date=datetime.utcnow(),
+            amount=new_payment
+        )
+        db.session.add(payment_record)
         db.session.commit()
 
         # Backup updated bill to Replit DB
@@ -276,4 +286,49 @@ def delete_bill(bill_id):
     except Exception as e:
         app.logger.error(f"Error deleting bill: {str(e)}")
         flash('Error deleting bill. Please try again.', 'danger')
+        return redirect(url_for('bills'))
+
+@app.route('/payment_history')
+def payment_history():
+    try:
+        # Create a model to track payments with date
+        from models import PaymentHistory
+        
+        # First check if any payment records exist
+        payment_records = PaymentHistory.query.order_by(PaymentHistory.payment_date.desc()).all()
+        
+        # If no records but we have bills with payments, create payment history records
+        if len(payment_records) == 0:
+            bills_with_payments = Bill.query.filter(Bill.amount_paid > 0).all()
+            for bill in bills_with_payments:
+                # For existing bills, assume payment was made on the bill date
+                new_payment = PaymentHistory(
+                    bill_id=bill.id,
+                    bill_number=bill.bill_number,
+                    client_name=bill.client_name,
+                    payment_date=bill.date,
+                    amount=bill.amount_paid
+                )
+                db.session.add(new_payment)
+            
+            try:
+                db.session.commit()
+                # Refresh payment records
+                payment_records = PaymentHistory.query.order_by(PaymentHistory.payment_date.desc()).all()
+            except Exception as e:
+                db.session.rollback()
+                app.logger.error(f"Error creating payment history: {str(e)}")
+        
+        # Group payments by client name
+        clients = {}
+        for record in payment_records:
+            if record.client_name not in clients:
+                clients[record.client_name] = []
+            clients[record.client_name].append(record)
+            
+        return render_template('payment_history.html', payment_records=payment_records, clients=clients)
+        
+    except Exception as e:
+        app.logger.error(f"Error in payment_history route: {str(e)}")
+        flash('Error loading payment history. Please try again.', 'danger')
         return redirect(url_for('bills'))

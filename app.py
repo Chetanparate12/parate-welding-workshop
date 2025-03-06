@@ -34,7 +34,7 @@ def restore_from_replit_db():
         from replit import db
         import json
         from datetime import datetime
-        
+
         # Only restore if there are no bills in SQLite but there are in Replit DB
         if Bill.query.count() == 0:
             try:
@@ -76,6 +76,19 @@ db.init_app(app)
 
 from routes import *  # noqa: F401
 
+def create_tables():
+    with app.app_context():
+        db.create_all()
+
+        # Make sure we migrate to add the new table
+        try:
+            from models import PaymentHistory
+            # Check if the PaymentHistory table exists
+            PaymentHistory.query.first()
+        except Exception as e:
+            app.logger.info("Creating PaymentHistory table")
+            db.create_all()
+
 with app.app_context():
-    db.create_all()
+    create_tables()
     restore_from_replit_db()

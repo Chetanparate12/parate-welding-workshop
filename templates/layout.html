@@ -17,10 +17,13 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link" href="/">Generate Bill</a>
+                        <a class="nav-link" href="{{ url_for('index') }}">Generate Bill</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/bills">View Bills</a>
+                        <a class="nav-link" href="{{ url_for('bills') }}">View Bills</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('payment_history') }}">Payment History</a>
                     </li>
                 </ul>
             </div>

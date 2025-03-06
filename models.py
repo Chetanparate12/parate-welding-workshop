@@ -13,3 +13,11 @@ class Bill(db.Model):
     pdf_path = db.Column(db.String(200), nullable=False)
     amount_paid = db.Column(db.Float, default=0.0)
     payment_status = db.Column(db.String(20), default='pending')  # pending, partial, paid
+    
+class PaymentHistory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    bill_id = db.Column(db.Integer, db.ForeignKey('bill.id'), nullable=False)
+    bill_number = db.Column(db.String(20), nullable=False) 
+    client_name = db.Column(db.String(100), nullable=False)
+    payment_date = db.Column(db.DateTime, default=datetime.utcnow)
+    amount = db.Column(db.Float, nullable=False)
