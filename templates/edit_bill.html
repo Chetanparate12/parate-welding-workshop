@@ -1,0 +1,149 @@
+
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2>Edit Bill - #{{ bill.bill_number }}</h2>
+    </div>
+    <div class="card-body">
+        <form id="editBillForm" action="{{ url_for('update_bill', bill_id=bill.id) }}" method="POST">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="client_name" class="form-label">Client Name</label>
+                    <input type="text" class="form-control" id="client_name" name="client_name" value="{{ bill.client_name }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="phone_number" class="form-label">Phone Number</label>
+                    <input type="text" class="form-control" id="phone_number" name="phone_number" value="{{ bill.phone_number }}" required>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h4>Items</h4>
+                    <button type="button" class="btn btn-sm btn-primary" id="addItem">Add Item</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="itemsTable">
+                        <thead>
+                            <tr>
+                                <th>Item Name</th>
+                                <th>Unit</th>
+                                <th>Quantity</th>
+                                <th>Price (₹)</th>
+                                <th>Amount (₹)</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="itemsBody">
+                            {% for item in bill.items %}
+                            <tr>
+                                <td><input type="text" class="form-control item-name" name="item_name[]" value="{{ item.name }}" required></td>
+                                <td><input type="text" class="form-control" name="unit[]" value="{{ item.unit }}" required></td>
+                                <td><input type="number" class="form-control item-qty" name="quantity[]" min="0.01" step="0.01" value="{{ item.quantity }}" required></td>
+                                <td><input type="number" class="form-control item-price" name="price[]" min="0.01" step="0.01" value="{{ item.price }}" required></td>
+                                <td><input type="number" class="form-control item-amount" name="amount[]" value="{{ item.amount }}" readonly></td>
+                                <td><button type="button" class="btn btn-sm btn-danger remove-item">Remove</button></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="subtotal" class="form-label">Subtotal (₹)</label>
+                    <input type="number" class="form-control" id="subtotal" name="subtotal" value="{{ bill.subtotal }}" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label for="total" class="form-label">Total (₹)</label>
+                    <input type="number" class="form-control" id="total" name="total" value="{{ bill.total }}" readonly>
+                </div>
+            </div>
+
+            <div class="text-end">
+                <a href="{{ url_for('bills') }}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">Update Bill</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Recalculate amounts when quantity or price changes
+    document.querySelectorAll('.item-qty, .item-price').forEach(function(input) {
+      input.addEventListener('input', calculateAmount);
+    });
+
+    // Add item button
+    document.getElementById('addItem').addEventListener('click', function() {
+      const newRow = document.createElement('tr');
+      newRow.innerHTML = `
+        <td><input type="text" class="form-control item-name" name="item_name[]" required></td>
+        <td><input type="text" class="form-control" name="unit[]" required></td>
+        <td><input type="number" class="form-control item-qty" name="quantity[]" min="0.01" step="0.01" required></td>
+        <td><input type="number" class="form-control item-price" name="price[]" min="0.01" step="0.01" required></td>
+        <td><input type="number" class="form-control item-amount" name="amount[]" readonly></td>
+        <td><button type="button" class="btn btn-sm btn-danger remove-item">Remove</button></td>
+      `;
+      document.getElementById('itemsBody').appendChild(newRow);
+      
+      // Add event listeners to new row
+      newRow.querySelector('.item-qty').addEventListener('input', calculateAmount);
+      newRow.querySelector('.item-price').addEventListener('input', calculateAmount);
+      newRow.querySelector('.remove-item').addEventListener('click', removeItem);
+    });
+
+    // Remove item buttons
+    document.querySelectorAll('.remove-item').forEach(function(button) {
+      button.addEventListener('click', removeItem);
+    });
+
+    // Form submit validation
+    document.getElementById('editBillForm').addEventListener('submit', function(e) {
+      const rows = document.querySelectorAll('#itemsBody tr');
+      if (rows.length === 0) {
+        e.preventDefault();
+        alert('Please add at least one item to the bill');
+      }
+    });
+
+    // Calculate initial totals
+    calculateTotals();
+  });
+
+  function calculateAmount(e) {
+    const row = e.target.closest('tr');
+    const quantity = parseFloat(row.querySelector('.item-qty').value) || 0;
+    const price = parseFloat(row.querySelector('.item-price').value) || 0;
+    const amount = quantity * price;
+    row.querySelector('.item-amount').value = amount.toFixed(2);
+    calculateTotals();
+  }
+
+  function removeItem(e) {
+    const row = e.target.closest('tr');
+    if (document.querySelectorAll('#itemsBody tr').length > 1) {
+      row.remove();
+      calculateTotals();
+    } else {
+      alert('Bill must have at least one item');
+    }
+  }
+
+  function calculateTotals() {
+    let subtotal = 0;
+    document.querySelectorAll('.item-amount').forEach(function(input) {
+      subtotal += parseFloat(input.value) || 0;
+    });
+    
+    const total = subtotal; // You can add taxes or other charges here if needed
+    
+    document.getElementById('subtotal').value = subtotal.toFixed(2);
+    document.getElementById('total').value = total.toFixed(2);
+  }
+</script>
+{% endblock %}

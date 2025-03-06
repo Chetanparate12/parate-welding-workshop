@@ -170,6 +170,84 @@ def update_payment(bill_id):
         flash('Error updating payment. Please try again.', 'danger')
         return redirect(url_for('edit_payment', bill_id=bill_id))
 
+@app.route('/edit_bill/<int:bill_id>')
+def edit_bill(bill_id):
+    try:
+        bill = Bill.query.get_or_404(bill_id)
+        
+        # Only allow editing of pending or partial payments
+        if bill.payment_status == 'paid':
+            flash('Paid bills cannot be edited.', 'danger')
+            return redirect(url_for('bills'))
+            
+        return render_template('edit_bill.html', bill=bill)
+    except Exception as e:
+        app.logger.error(f"Error in edit_bill route: {str(e)}")
+        flash('Error loading bill. Please try again.', 'danger')
+        return redirect(url_for('bills'))
+
+@app.route('/update_bill/<int:bill_id>', methods=['POST'])
+def update_bill(bill_id):
+    try:
+        bill = Bill.query.get_or_404(bill_id)
+        
+        # Only allow editing of pending or partial payments
+        if bill.payment_status == 'paid':
+            flash('Paid bills cannot be edited.', 'danger')
+            return redirect(url_for('bills'))
+            
+        data = request.form
+        items = []
+
+        for i in range(len(request.form.getlist('item_name[]'))):
+            items.append({
+                'name': request.form.getlist('item_name[]')[i],
+                'unit': request.form.getlist('unit[]')[i],
+                'quantity': float(request.form.getlist('quantity[]')[i]),
+                'price': float(request.form.getlist('price[]')[i]),
+                'amount': float(request.form.getlist('amount[]')[i])
+            })
+
+        # Update bill details
+        bill.client_name = data['client_name']
+        bill.phone_number = data['phone_number']
+        bill.items = items
+        bill.subtotal = float(data['subtotal'])
+        new_total = float(data['total'])
+        
+        # Handle the case where total changes but payment was made
+        if bill.amount_paid > 0:
+            if new_total < bill.amount_paid:
+                # If new total is less than amount already paid
+                bill.amount_paid = new_total
+                bill.payment_status = 'paid'
+            else:
+                # Recalculate payment status based on new total
+                if bill.amount_paid >= new_total:
+                    bill.payment_status = 'paid'
+                else:
+                    bill.payment_status = 'partial'
+        
+        bill.total = new_total
+
+        # Generate updated PDF
+        generate_pdf(bill, bill.pdf_path)
+
+        db.session.commit()
+        
+        # Backup updated bill to Replit DB
+        from utils.db_backup import backup_bill_to_replit_db
+        backup_bill_to_replit_db(bill)
+
+        flash('Bill updated successfully!', 'success')
+        return redirect(url_for('bills'))
+
+    except Exception as e:
+        app.logger.error(f"Error updating bill: {str(e)}")
+        db.session.rollback()
+        flash('Error updating bill. Please try again.', 'danger')
+        return redirect(url_for('edit_bill', bill_id=bill_id))
+
 @app.route('/delete_bill/<int:bill_id>', methods=['POST'])
 def delete_bill(bill_id):
     try:
