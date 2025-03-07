@@ -13,10 +13,9 @@ db = SQLAlchemy(model_class=Base)
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev_key")
 
-# Don't remove the database in production
+# Never remove the database to ensure bill persistence
 sqlite_path = "instance/bills.db"
-if os.environ.get("REPLIT_DEPLOYMENT") != "1" and os.path.exists(sqlite_path) and os.environ.get("PRESERVE_DB") != "1":
-    os.remove(sqlite_path)
+# Always preserve the database - removed the code that deletes it
 
 # Use a persistent database path for deployment
 if os.environ.get("REPLIT_DEPLOYMENT") == "1":

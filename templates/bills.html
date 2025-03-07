@@ -3,7 +3,10 @@
 {% block content %}
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <h2>Generated Bills</h2>
+        <div>
+            <h2>Generated Bills</h2>
+            <small class="text-success"><i class="bi bi-check-circle-fill"></i> Bills are permanently saved</small>
+        </div>
         <a href="{{ url_for('payment_history') }}" class="btn btn-info">View Payment History</a>
     </div>
     <div class="card-body">

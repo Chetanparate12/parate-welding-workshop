@@ -22,6 +22,17 @@ def backup_bill_to_replit_db(bill):
         
         # Save to Replit DB with a prefix for easy identification
         db[f'bill_{bill.bill_number}'] = bill_data
+        
+        # Also create a metadata key to track total number of bills
+        try:
+            all_bills = [k for k in db.keys() if k.startswith('bill_')]
+            db['bills_metadata'] = {
+                'total_count': len(all_bills),
+                'last_updated': datetime.utcnow().isoformat()
+            }
+        except Exception:
+            pass  # Ignore metadata errors
+            
         return True
     except Exception as e:
         print(f"Error backing up bill to Replit DB: {str(e)}")
