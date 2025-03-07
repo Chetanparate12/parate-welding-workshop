@@ -1,0 +1,24 @@
+
+{% extends 'layout.html' %}
+
+{% block title %}Login - Parate Welding Workshop{% endblock %}
+
+{% block content %}
+<div class="card mx-auto" style="max-width: 500px; margin-top: 100px;">
+    <div class="card-header">
+        <h2 class="text-center">Login Required</h2>
+    </div>
+    <div class="card-body text-center">
+        <p>Please log in with your Replit account to access the billing system.</p>
+        
+        <div class="d-flex justify-content-center my-4">
+            <script
+                authed="location.href='/'"
+                src="https://auth.util.repl.co/script.js"
+            ></script>
+        </div>
+        
+        <p class="text-muted small">This application uses Replit's authentication system to secure your data.</p>
+    </div>
+</div>
+{% endblock %}

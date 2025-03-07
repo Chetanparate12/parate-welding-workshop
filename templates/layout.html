@@ -15,7 +15,7 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
+                <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('index') }}">Generate Bill</a>
                     </li>
@@ -26,6 +26,11 @@
                         <a class="nav-link" href="{{ url_for('payment_history') }}">Payment History</a>
                     </li>
                 </ul>
+                <span class="navbar-text">
+                    {% if request.headers.get('X-Replit-User-Name') %}
+                        Welcome, {{ request.headers.get('X-Replit-User-Name') }}
+                    {% endif %}
+                </span>
             </div>
         </div>
     </nav>

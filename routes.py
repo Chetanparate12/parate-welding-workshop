@@ -2,6 +2,10 @@ import os
 from datetime import datetime
 from flask import render_template, request, jsonify, send_file, flash, redirect, url_for
 from app import app, db
+
+@app.route('/login')
+def login():
+    return render_template('login.html')
 from models import Bill
 from utils.pdf_generator import generate_pdf
 
