@@ -13,17 +13,7 @@ db = SQLAlchemy(model_class=Base)
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev_key")
 
-# Authentication middleware
-@app.before_request
-def check_auth():
-    # Skip auth for static files
-    if request.path.startswith('/static/'):
-        return
-        
-    # Check for Replit auth headers
-    user_id = request.headers.get('X-Replit-User-Id')
-    if not user_id and request.path != '/login':
-        return redirect('/login')
+# Authentication removed
 
 # Never remove the database to ensure bill persistence
 sqlite_path = "instance/bills.db"
