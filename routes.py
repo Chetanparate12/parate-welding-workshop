@@ -16,6 +16,9 @@ else:
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
+print(f"Using persistent storage path: {UPLOAD_FOLDER}")
+print(f"Deployment mode: {os.environ.get('REPLIT_DEPLOYMENT')}")
+
 @app.route('/')
 def index():
     return render_template('index.html')
