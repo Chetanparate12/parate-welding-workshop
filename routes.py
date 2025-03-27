@@ -282,6 +282,12 @@ def delete_bill(bill_id):
         if os.path.exists(bill.pdf_path):
             os.remove(bill.pdf_path)
 
+        # Delete payment history records associated with this bill
+        from models import PaymentHistory
+        payment_records = PaymentHistory.query.filter_by(bill_id=bill.id).all()
+        for record in payment_records:
+            db.session.delete(record)
+
         # Delete the bill from database
         db.session.delete(bill)
         db.session.commit()
@@ -290,7 +296,7 @@ def delete_bill(bill_id):
         from utils.db_backup import delete_bill_from_replit_db
         delete_bill_from_replit_db(bill.bill_number)
 
-        flash('Bill deleted successfully!', 'success')
+        flash('Bill and payment history deleted successfully!', 'success')
         return redirect(url_for('bills'))
 
     except Exception as e:
