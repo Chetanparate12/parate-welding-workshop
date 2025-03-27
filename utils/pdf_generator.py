@@ -12,6 +12,29 @@ from reportlab.graphics.shapes import Line, Drawing
 from models import PaymentHistory
 from app import db
 
+# Define a consistent color scheme for the PDF
+class ColorScheme:
+    # Primary colors
+    PRIMARY = colors.HexColor('#1a457a')  # Deep navy blue - for headers, borders
+    SECONDARY = colors.HexColor('#4682b4')  # Steel blue - for sub-headers
+    ACCENT = colors.HexColor('#e67e22')  # Orange - for highlights and attention
+    
+    # Status colors
+    SUCCESS = colors.HexColor('#27ae60')  # Green for paid status
+    WARNING = colors.HexColor('#f39c12')  # Orange/amber for partial payment
+    DANGER = colors.HexColor('#c0392b')   # Red for pending payment
+    
+    # Neutral colors
+    DARK = colors.HexColor('#2c3e50')     # Dark slate for text
+    LIGHT = colors.HexColor('#ecf0f1')    # Light gray for backgrounds
+    WHITE = colors.white
+    
+    # Table colors
+    TABLE_HEADER = PRIMARY
+    TABLE_ROW_ODD = colors.HexColor('#f9f9f9')   # Very light gray
+    TABLE_ROW_EVEN = colors.white
+    TABLE_BORDER = colors.HexColor('#d9d9d9')  # Light gray border
+
 class HorizontalLine(Flowable):
     """Custom Flowable for drawing horizontal lines"""
     
@@ -45,14 +68,14 @@ def generate_pdf(bill, output_path):
     # Get the standard style sheet and define custom styles
     styles = getSampleStyleSheet()
     
-    # Custom styles for improved appearance
+    # Custom styles for improved appearance using our color scheme
     title_style = ParagraphStyle(
         'Title',
         parent=styles['Heading1'],
         fontSize=18,
         alignment=TA_CENTER,
         spaceAfter=0.5*cm,
-        textColor=colors.darkblue
+        textColor=ColorScheme.PRIMARY
     )
     
     subtitle_style = ParagraphStyle(
@@ -60,7 +83,7 @@ def generate_pdf(bill, output_path):
         parent=styles['Heading2'],
         fontSize=14,
         alignment=TA_CENTER,
-        textColor=colors.darkblue,
+        textColor=ColorScheme.SECONDARY,
         spaceAfter=0.2*cm
     )
     
@@ -69,7 +92,7 @@ def generate_pdf(bill, output_path):
         parent=styles['Heading2'],
         fontSize=12,
         alignment=TA_LEFT,
-        textColor=colors.darkblue,
+        textColor=ColorScheme.PRIMARY,
         spaceAfter=0.2*cm
     )
     
@@ -77,14 +100,16 @@ def generate_pdf(bill, output_path):
         'CustomNormal',
         parent=styles['Normal'],
         fontSize=10,
-        spaceAfter=0.1*cm
+        spaceAfter=0.1*cm,
+        textColor=ColorScheme.DARK
     )
     
     info_style = ParagraphStyle(
         'Info',
         parent=styles['Normal'],
         fontSize=9,
-        alignment=TA_RIGHT
+        alignment=TA_RIGHT,
+        textColor=ColorScheme.DARK
     )
     
     # List to hold the PDF elements
@@ -95,7 +120,7 @@ def generate_pdf(bill, output_path):
         # Create a simple text-based logo
         elements.append(Paragraph("PARATE WELDING WORKSHOP", title_style))
         elements.append(Paragraph("Professional Metal Fabrication Services", subtitle_style))
-        elements.append(HorizontalLine(page_width-3*cm, 2, colors.darkblue, 0.3*cm, 0.5*cm))
+        elements.append(HorizontalLine(page_width-3*cm, 2, ColorScheme.PRIMARY, 0.3*cm, 0.5*cm))
     except Exception as e:
         # If logo creation fails, just add text header
         elements.append(Paragraph("PARATE WELDING WORKSHOP", title_style))
@@ -109,8 +134,8 @@ def generate_pdf(bill, output_path):
     bill_info_table.setStyle(TableStyle([
         ('FONT', (0, 0), (-1, -1), 'Helvetica'),
         ('FONTSIZE', (0, 0), (-1, -1), 9),
-        ('TEXTCOLOR', (0, 0), (0, -1), colors.darkblue),
-        ('TEXTCOLOR', (2, 0), (2, -1), colors.darkblue),
+        ('TEXTCOLOR', (0, 0), (0, -1), ColorScheme.PRIMARY),
+        ('TEXTCOLOR', (2, 0), (2, -1), ColorScheme.PRIMARY),
         ('ALIGN', (0, 0), (0, -1), 'RIGHT'),
         ('ALIGN', (2, 0), (2, -1), 'RIGHT'),
         ('ALIGN', (1, 0), (1, -1), 'LEFT'),
@@ -123,7 +148,7 @@ def generate_pdf(bill, output_path):
     
     # Client Info with improved presentation
     elements.append(Paragraph("CLIENT INFORMATION", heading_style))
-    elements.append(HorizontalLine(8*cm, 1, colors.darkgrey, 0, 0.2*cm))
+    elements.append(HorizontalLine(8*cm, 1, ColorScheme.SECONDARY, 0, 0.2*cm))
     
     client_data = [
         ['Client Name:', bill.client_name],
@@ -145,7 +170,7 @@ def generate_pdf(bill, output_path):
     
     # Items Table with improved styling
     elements.append(Paragraph("ITEMS", heading_style))
-    elements.append(HorizontalLine(8*cm, 1, colors.darkgrey, 0, 0.2*cm))
+    elements.append(HorizontalLine(8*cm, 1, ColorScheme.SECONDARY, 0, 0.2*cm))
     
     items_data = [['Item Description', 'Quantity/Weight', 'Unit', 'Price (₹)', 'Amount (₹)']]
     
@@ -171,8 +196,8 @@ def generate_pdf(bill, output_path):
     # Style the table professionally
     table_style = [
         # Header row styling
-        ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('BACKGROUND', (0, 0), (-1, 0), ColorScheme.TABLE_HEADER),
+        ('TEXTCOLOR', (0, 0), (-1, 0), ColorScheme.WHITE),
         ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, 0), 10),
@@ -184,14 +209,14 @@ def generate_pdf(bill, output_path):
         ('FONTSIZE', (0, 1), (-1, -1), 9),
         ('ALIGN', (0, 1), (0, -1), 'LEFT'),  # Item name left aligned
         ('ALIGN', (1, 1), (-1, -1), 'RIGHT'),  # All numbers right aligned
-        ('GRID', (0, 0), (-1, -2), 0.5, colors.grey),
+        ('GRID', (0, 0), (-1, -2), 0.5, ColorScheme.TABLE_BORDER),
         
         # Alternating row colors for readability
-        ('ROWBACKGROUNDS', (0, 1), (-1, -2), [colors.whitesmoke, colors.white]),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -2), [ColorScheme.TABLE_ROW_ODD, ColorScheme.TABLE_ROW_EVEN]),
         
         # Total row styling
         ('FONTNAME', (-2, -1), (-1, -1), 'Helvetica-Bold'),
-        ('LINEABOVE', (-2, -1), (-1, -1), 1, colors.black),
+        ('LINEABOVE', (-2, -1), (-1, -1), 1, ColorScheme.DARK),
         ('ALIGN', (-2, -1), (-1, -1), 'RIGHT'),
     ]
     
@@ -201,7 +226,7 @@ def generate_pdf(bill, output_path):
     
     # Payment Information with better layout
     elements.append(Paragraph("PAYMENT DETAILS", heading_style))
-    elements.append(HorizontalLine(8*cm, 1, colors.darkgrey, 0, 0.2*cm))
+    elements.append(HorizontalLine(8*cm, 1, ColorScheme.SECONDARY, 0, 0.2*cm))
     
     payment_info_data = [
         ['Total Amount:', f"₹{bill.total:.2f}"],
@@ -211,8 +236,8 @@ def generate_pdf(bill, output_path):
     ]
     
     # Highlight the payment status with color
-    status_color = colors.green if bill.payment_status == 'paid' else (
-        colors.orange if bill.payment_status == 'partial' else colors.red
+    status_color = ColorScheme.SUCCESS if bill.payment_status == 'paid' else (
+        ColorScheme.WARNING if bill.payment_status == 'partial' else ColorScheme.DANGER
     )
     
     payment_table = Table(payment_info_data, colWidths=[4*cm, 10*cm])
@@ -234,7 +259,7 @@ def generate_pdf(bill, output_path):
         
         if payment_records:
             elements.append(Paragraph("PAYMENT HISTORY", heading_style))
-            elements.append(HorizontalLine(8*cm, 1, colors.darkgrey, 0, 0.2*cm))
+            elements.append(HorizontalLine(8*cm, 1, ColorScheme.SECONDARY, 0, 0.2*cm))
             
             payment_data = [['Date', 'Amount (₹)']]
             for record in payment_records:
@@ -249,8 +274,8 @@ def generate_pdf(bill, output_path):
             payment_table = Table(payment_data, colWidths=[6*cm, 6*cm])
             payment_table.setStyle(TableStyle([
                 # Header
-                ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
-                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('BACKGROUND', (0, 0), (-1, 0), ColorScheme.TABLE_HEADER),
+                ('TEXTCOLOR', (0, 0), (-1, 0), ColorScheme.WHITE),
                 ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
                 ('FONTSIZE', (0, 0), (-1, 0), 10),
@@ -262,14 +287,14 @@ def generate_pdf(bill, output_path):
                 ('FONTSIZE', (0, 1), (-1, -1), 9),
                 ('ALIGN', (0, 1), (0, -1), 'LEFT'),
                 ('ALIGN', (1, 1), (1, -1), 'RIGHT'),
-                ('GRID', (0, 0), (-1, -2), 0.5, colors.grey),
+                ('GRID', (0, 0), (-1, -2), 0.5, ColorScheme.TABLE_BORDER),
                 
                 # Alternating rows
-                ('ROWBACKGROUNDS', (0, 1), (-1, -2), [colors.whitesmoke, colors.white]),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -2), [ColorScheme.TABLE_ROW_ODD, ColorScheme.TABLE_ROW_EVEN]),
                 
                 # Total row
                 ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
-                ('LINEABOVE', (0, -1), (-1, -1), 1, colors.black),
+                ('LINEABOVE', (0, -1), (-1, -1), 1, ColorScheme.DARK),
                 ('ALIGN', (0, -1), (0, -1), 'RIGHT'),
             ]))
             
@@ -281,7 +306,7 @@ def generate_pdf(bill, output_path):
     
     # Footer with terms and contact information
     elements.append(Spacer(1, 1*cm))
-    elements.append(HorizontalLine(page_width-3*cm, 1, colors.darkblue, 0, 0.3*cm))
+    elements.append(HorizontalLine(page_width-3*cm, 1, ColorScheme.PRIMARY, 0, 0.3*cm))
     
     footer_text = """
     Thank you for your business! For any questions regarding this invoice, please contact us.
