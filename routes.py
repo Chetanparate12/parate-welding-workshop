@@ -88,7 +88,11 @@ def generate_bill():
             })
 
         bill_number = f"FAB-{datetime.now().strftime('%Y%m%d%H%M%S')}"
-        pdf_filename = f"{bill_number}.pdf"
+        # Include client name in the PDF filename
+        client_name = data['client_name'].replace(' ', '_')  # Replace spaces with underscores
+        # Remove any special characters that might cause issues in filenames
+        client_name = ''.join(c for c in client_name if c.isalnum() or c == '_')
+        pdf_filename = f"{client_name}_{bill_number}.pdf"
         pdf_path = os.path.join(UPLOAD_FOLDER, pdf_filename)
 
         total = float(data['total'])
@@ -179,8 +183,24 @@ def update_payment(bill_id):
         from utils.db_backup import backup_bill_to_replit_db
         backup_bill_to_replit_db(bill)
 
+        # Update PDF filename with client name
+        old_pdf_path = bill.pdf_path
+        
+        # Remove the old PDF file if it exists
+        if os.path.exists(old_pdf_path):
+            os.remove(old_pdf_path)
+            
+        # Create updated PDF filename with client name
+        client_name = bill.client_name.replace(' ', '_')
+        client_name = ''.join(c for c in client_name if c.isalnum() or c == '_')
+        pdf_filename = f"{client_name}_{bill.bill_number}.pdf"
+        new_pdf_path = os.path.join(UPLOAD_FOLDER, pdf_filename)
+        
+        # Update the bill's PDF path
+        bill.pdf_path = new_pdf_path
+        
         # Generate updated PDF
-        generate_pdf(bill, bill.pdf_path)
+        generate_pdf(bill, new_pdf_path)
 
         flash('Payment updated successfully!', 'success')
         return redirect(url_for('bills'))
@@ -250,8 +270,24 @@ def update_bill(bill_id):
         
         bill.total = new_total
 
+        # Update PDF filename with client name
+        old_pdf_path = bill.pdf_path
+        
+        # Remove the old PDF file if it exists
+        if os.path.exists(old_pdf_path):
+            os.remove(old_pdf_path)
+            
+        # Create updated PDF filename with client name
+        client_name = bill.client_name.replace(' ', '_')
+        client_name = ''.join(c for c in client_name if c.isalnum() or c == '_')
+        pdf_filename = f"{client_name}_{bill.bill_number}.pdf"
+        new_pdf_path = os.path.join(UPLOAD_FOLDER, pdf_filename)
+        
+        # Update the bill's PDF path
+        bill.pdf_path = new_pdf_path
+        
         # Generate updated PDF
-        generate_pdf(bill, bill.pdf_path)
+        generate_pdf(bill, new_pdf_path)
 
         db.session.commit()
         
