@@ -105,11 +105,14 @@ def generate_bill():
         elif amount_paid > 0:
             payment_status = 'partial'
 
+        # Parse the date from the form
+        bill_date = datetime.strptime(data['bill_date'], '%Y-%m-%d') if data.get('bill_date') else datetime.utcnow()
+        
         new_bill = Bill(
             bill_number=bill_number,
             client_name=data['client_name'],
             phone_number=data['phone_number'],
-            date=datetime.utcnow(),
+            date=bill_date,
             items=items,
             subtotal=float(data['subtotal']),
             total=total,
@@ -251,6 +254,12 @@ def update_bill(bill_id):
         # Update bill details
         bill.client_name = data['client_name']
         bill.phone_number = data['phone_number']
+        
+        # Parse the date from the form
+        if data.get('bill_date'):
+            bill_date = datetime.strptime(data['bill_date'], '%Y-%m-%d')
+            bill.date = bill_date
+            
         bill.items = items
         bill.subtotal = float(data['subtotal'])
         new_total = float(data['total'])

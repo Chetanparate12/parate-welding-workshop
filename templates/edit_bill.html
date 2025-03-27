@@ -9,13 +9,17 @@
     <div class="card-body">
         <form id="editBillForm" action="{{ url_for('update_bill', bill_id=bill.id) }}" method="POST">
             <div class="row mb-3">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label for="client_name" class="form-label">Client Name</label>
                     <input type="text" class="form-control" id="client_name" name="client_name" value="{{ bill.client_name }}" required>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label for="phone_number" class="form-label">Phone Number</label>
                     <input type="text" class="form-control" id="phone_number" name="phone_number" value="{{ bill.phone_number }}" required>
+                </div>
+                <div class="col-md-4">
+                    <label for="bill_date" class="form-label">Bill Date</label>
+                    <input type="date" class="form-control" id="bill_date" name="bill_date" value="{{ bill.date.strftime('%Y-%m-%d') }}" required>
                 </div>
             </div>
 

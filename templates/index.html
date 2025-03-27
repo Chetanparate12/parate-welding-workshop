@@ -16,6 +16,11 @@
                 <label for="phone_number" class="form-label">Phone Number</label>
                 <input type="tel" class="form-control" id="phone_number" name="phone_number" pattern="[0-9]{10}" title="Please enter a valid 10-digit phone number" required>
             </div>
+            
+            <div class="mb-3">
+                <label for="bill_date" class="form-label">Bill Date</label>
+                <input type="date" class="form-control" id="bill_date" name="bill_date" required>
+            </div>
 
             <div class="card mb-3">
                 <div class="card-header d-flex justify-content-between align-items-center">
@@ -58,4 +63,12 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/form.js') }}"></script>
+<script>
+    // Set the default date to today
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date();
+        const formattedDate = today.toISOString().substr(0, 10); // Format as YYYY-MM-DD
+        document.getElementById('bill_date').value = formattedDate;
+    });
+</script>
 {% endblock %}
