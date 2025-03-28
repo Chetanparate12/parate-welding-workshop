@@ -23,14 +23,22 @@ print(f"Deployment mode: {os.environ.get('REPLIT_DEPLOYMENT')}")
 def index():
     return render_template('index.html')
 
-@app.route('/bills')
+@app.route('/bills', methods=['GET'])
 def bills():
     try:
+        # Get search parameter
+        search_query = request.args.get('search', '')
+        
         # Try to get bills from SQLite first
-        all_bills = Bill.query.order_by(Bill.date.desc()).all()
+        if search_query:
+            # Filter bills by client name if search query is provided
+            all_bills = Bill.query.filter(Bill.client_name.ilike(f'%{search_query}%')).order_by(Bill.date.desc()).all()
+        else:
+            # Get all bills if no search query
+            all_bills = Bill.query.order_by(Bill.date.desc()).all()
         
         # If no bills in SQLite, try getting from Replit DB
-        if len(all_bills) == 0:
+        if len(all_bills) == 0 and not search_query:
             from utils.db_backup import get_all_bills_from_replit_db
             replit_bills = get_all_bills_from_replit_db()
             
@@ -64,7 +72,7 @@ def bills():
         if os.environ.get("PRESERVE_DB") != "1":
             os.environ["PRESERVE_DB"] = "1"
             
-        return render_template('bills.html', bills=all_bills, permanent_storage=True)
+        return render_template('bills.html', bills=all_bills, search_query=search_query, permanent_storage=True)
     except Exception as e:
         app.logger.error(f"Error in bills route: {str(e)}")
         # If all else fails, get bills directly from Replit DB for display
