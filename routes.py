@@ -161,20 +161,40 @@ def edit_payment(bill_id):
 def update_payment(bill_id):
     try:
         bill = Bill.query.get_or_404(bill_id)
-        new_payment = float(request.form['new_payment'])
-
-        # Validate payment amount
-        pending_amount = bill.total - bill.amount_paid
-        if new_payment <= 0 or new_payment > pending_amount:
-            flash('Invalid payment amount', 'danger')
+        
+        # If bill is already fully paid, don't allow additional payments
+        if bill.payment_status == 'paid':
+            flash('This bill is already fully paid.', 'info')
+            return redirect(url_for('bills'))
+            
+        # Get and validate the new payment amount
+        try:
+            new_payment = float(request.form['new_payment'])
+        except ValueError:
+            flash('Invalid payment amount. Please enter a valid number.', 'danger')
             return redirect(url_for('edit_payment', bill_id=bill.id))
 
+        # Calculate the pending amount
+        pending_amount = bill.total - bill.amount_paid
+        
+        # Validate payment amount (ensure it's positive and not greater than the pending amount)
+        if new_payment <= 0:
+            flash('Payment amount must be greater than zero.', 'danger')
+            return redirect(url_for('edit_payment', bill_id=bill.id))
+            
+        if new_payment > pending_amount:
+            # Adjust payment to match the pending amount (to prevent overpayment)
+            new_payment = pending_amount
+            flash('Payment amount adjusted to match the pending amount.', 'warning')
+
         # Update payment information
+        previous_status = bill.payment_status
         bill.amount_paid += new_payment
 
-        # Update payment status
-        if bill.amount_paid >= bill.total:
+        # Update payment status based on new total
+        if abs(bill.amount_paid - bill.total) < 0.01:  # Using a small epsilon to handle floating point precision
             bill.payment_status = 'paid'
+            bill.amount_paid = bill.total  # Ensure exact match to avoid floating point issues
         else:
             bill.payment_status = 'partial'
 
@@ -188,18 +208,31 @@ def update_payment(bill_id):
             amount=new_payment
         )
         db.session.add(payment_record)
+        
+        # Commit the database changes
         db.session.commit()
 
         # Backup updated bill to Replit DB
         from utils.db_backup import backup_bill_to_replit_db
         backup_bill_to_replit_db(bill)
 
+        # Create a status message
+        status_message = ''
+        if bill.payment_status == 'paid' and previous_status != 'paid':
+            status_message = 'Bill has been marked as fully paid!'
+        elif bill.payment_status == 'partial':
+            remaining = bill.total - bill.amount_paid
+            status_message = f'Remaining balance: ₹{remaining:.2f}'
+
         # Update PDF filename with client name
         old_pdf_path = bill.pdf_path
         
         # Remove the old PDF file if it exists
         if os.path.exists(old_pdf_path):
-            os.remove(old_pdf_path)
+            try:
+                os.remove(old_pdf_path)
+            except Exception as e:
+                app.logger.error(f"Error removing old PDF: {str(e)}")
             
         # Create updated PDF filename with client name
         client_name = bill.client_name.replace(' ', '_')
@@ -213,11 +246,13 @@ def update_payment(bill_id):
         # Generate updated PDF
         generate_pdf(bill, new_pdf_path)
 
-        flash('Payment updated successfully!', 'success')
+        # Create success message
+        flash(f'Payment of ₹{new_payment:.2f} recorded successfully! {status_message}', 'success')
         return redirect(url_for('bills'))
 
     except Exception as e:
         app.logger.error(f"Error updating payment: {str(e)}")
+        db.session.rollback()
         flash('Error updating payment. Please try again.', 'danger')
         return redirect(url_for('edit_payment', bill_id=bill_id))
 

@@ -2,92 +2,171 @@
 
 {% block content %}
 <div class="card">
-    <div class="card-header">
-        <h2 class="h4 h2-md">Update Payment</h2>
-        <p class="small mb-0 text-muted">Bill #{{ bill.bill_number }} - {{ bill.client_name }}</p>
+    <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
+        <div>
+            <h2 class="h4 h2-md mb-0">Update Payment</h2>
+            <p class="small mb-0 text-muted">Bill #{{ bill.bill_number }} - {{ bill.client_name }}</p>
+        </div>
+        <div class="mt-2 mt-md-0">
+            <span class="badge {% if bill.payment_status == 'paid' %}bg-success{% elif bill.payment_status == 'partial' %}bg-warning{% else %}bg-danger{% endif %} p-2">
+                <i class="bi bi-{% if bill.payment_status == 'paid' %}check-circle{% elif bill.payment_status == 'partial' %}exclamation-circle{% else %}x-circle{% endif %} me-1"></i>
+                {{ bill.payment_status.title() }}
+            </span>
+        </div>
     </div>
     <div class="card-body">
-        <!-- Bill summary card - visible on mobile only -->
-        <div class="d-md-none mb-3">
-            <div class="card bg-light">
-                <div class="card-body p-3">
-                    <div class="d-flex justify-content-between">
-                        <div class="text-muted">Status:</div>
-                        <span class="badge {% if bill.payment_status == 'paid' %}bg-success{% elif bill.payment_status == 'partial' %}bg-warning{% else %}bg-danger{% endif %}">
-                            {{ bill.payment_status.title() }}
-                        </span>
+        <!-- Payment Progress Bar -->
+        <div class="mb-4">
+            <div class="d-flex justify-content-between mb-1">
+                <span>Payment Progress</span>
+                <span>{{ (bill.amount_paid / bill.total * 100)|round|int }}%</span>
+            </div>
+            <div class="progress" style="height: 10px;">
+                <div class="progress-bar {% if bill.payment_status == 'paid' %}bg-success{% elif bill.payment_status == 'partial' %}bg-warning{% else %}bg-danger{% endif %}"
+                     role="progressbar"
+                     style="width: {{ (bill.amount_paid / bill.total * 100)|round|int }}%"
+                     aria-valuenow="{{ (bill.amount_paid / bill.total * 100)|round|int }}"
+                     aria-valuemin="0"
+                     aria-valuemax="100"></div>
+            </div>
+        </div>
+        
+        <!-- Bill summary card -->
+        <div class="card bg-light mb-4">
+            <div class="card-body p-3">
+                <div class="row g-3 text-center">
+                    <div class="col-md-4">
+                        <div class="card border-0 bg-transparent">
+                            <div class="card-body p-2">
+                                <div class="text-muted mb-1">Total Amount</div>
+                                <div class="h4 mb-0">₹{{ '%.2f'|format(bill.total) }}</div>
+                            </div>
+                        </div>
                     </div>
-                    <hr class="my-2">
-                    <div class="row g-2 text-center">
-                        <div class="col-4">
-                            <div class="small text-muted">Total</div>
-                            <div class="fw-bold">₹{{ '%.2f'|format(bill.total) }}</div>
+                    <div class="col-md-4">
+                        <div class="card border-0 bg-transparent">
+                            <div class="card-body p-2">
+                                <div class="text-muted mb-1">Amount Paid</div>
+                                <div class="h4 mb-0 {% if bill.amount_paid > 0 %}text-success{% endif %}">₹{{ '%.2f'|format(bill.amount_paid) }}</div>
+                            </div>
                         </div>
-                        <div class="col-4">
-                            <div class="small text-muted">Paid</div>
-                            <div class="fw-bold">₹{{ '%.2f'|format(bill.amount_paid) }}</div>
-                        </div>
-                        <div class="col-4">
-                            <div class="small text-muted">Pending</div>
-                            <div class="fw-bold text-danger">₹{{ '%.2f'|format(bill.total - bill.amount_paid) }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 bg-transparent">
+                            <div class="card-body p-2">
+                                <div class="text-muted mb-1">Pending Amount</div>
+                                <div class="h4 mb-0 {% if bill.total > bill.amount_paid %}text-danger{% endif %}">₹{{ '%.2f'|format(bill.total - bill.amount_paid) }}</div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <form action="{{ url_for('update_payment', bill_id=bill.id) }}" method="POST">
-            <!-- Desktop version of the form - hidden on mobile -->
-            <div class="d-none d-md-block">
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Total Amount</label>
-                        <input type="text" class="form-control" value="₹{{ '%.2f'|format(bill.total) }}" readonly>
+        <!-- Payment form -->
+        <form action="{{ url_for('update_payment', bill_id=bill.id) }}" method="POST" id="paymentForm">
+            <div class="row">
+                <div class="col-md-6 mx-auto">
+                    <div class="mb-4">
+                        <label for="new_payment" class="form-label fw-bold">
+                            <i class="bi bi-cash me-1"></i> Enter New Payment Amount
+                        </label>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text">₹</span>
+                            <input type="number" 
+                                   class="form-control form-control-lg" 
+                                   id="new_payment" 
+                                   name="new_payment" 
+                                   min="0.01" 
+                                   step="0.01" 
+                                   max="{{ bill.total - bill.amount_paid }}" 
+                                   value="{{ bill.total - bill.amount_paid }}"
+                                   required>
+                        </div>
+                        <div class="form-text">
+                            <span id="remainingAmountText">
+                                Maximum payment amount: ₹{{ '%.2f'|format(bill.total - bill.amount_paid) }}
+                            </span>
+                        </div>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Current Amount Paid</label>
-                        <input type="text" class="form-control" value="₹{{ '%.2f'|format(bill.amount_paid) }}" readonly>
+                    
+                    <!-- Quick payment options -->
+                    {% if bill.total - bill.amount_paid > 0 %}
+                    <div class="mb-4">
+                        <div class="d-flex flex-wrap justify-content-center gap-2">
+                            <button type="button" class="btn btn-outline-primary quick-payment" data-amount="{{ bill.total - bill.amount_paid }}">
+                                Full Amount
+                            </button>
+                            {% if (bill.total - bill.amount_paid) / 2 >= 0.01 %}
+                            <button type="button" class="btn btn-outline-primary quick-payment" data-amount="{{ (bill.total - bill.amount_paid) / 2 }}">
+                                Half Payment
+                            </button>
+                            {% endif %}
+                            {% if (bill.total - bill.amount_paid) / 4 >= 0.01 %}
+                            <button type="button" class="btn btn-outline-primary quick-payment" data-amount="{{ (bill.total - bill.amount_paid) / 4 }}">
+                                Quarter Payment
+                            </button>
+                            {% endif %}
+                        </div>
                     </div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Pending Amount</label>
-                        <input type="text" class="form-control" value="₹{{ '%.2f'|format(bill.total - bill.amount_paid) }}" readonly>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="new_payment_desktop" class="form-label">Additional Payment Amount</label>
-                        <input type="number" class="form-control" id="new_payment_desktop" name="new_payment" min="0" step="0.01" max="{{ bill.total - bill.amount_paid }}" required>
-                    </div>
+                    {% endif %}
                 </div>
             </div>
 
-            <!-- Mobile version of the form - visible only on mobile -->
-            <div class="d-md-none">
-                <div class="mb-3">
-                    <label for="new_payment_mobile" class="form-label">
-                        <i class="bi bi-cash me-1"></i> Enter Payment Amount
-                    </label>
-                    <div class="input-group">
-                        <span class="input-group-text">₹</span>
-                        <input type="number" class="form-control" id="new_payment_mobile" name="new_payment" min="0" step="0.01" max="{{ bill.total - bill.amount_paid }}" required>
-                    </div>
-                    <div class="form-text">Maximum amount: ₹{{ '%.2f'|format(bill.total - bill.amount_paid) }}</div>
-                </div>
-            </div>
-
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4">
                 <div class="mb-3 mb-md-0">
                     <a href="{{ url_for('bills') }}" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-left me-1"></i> Back to Bills
                     </a>
                 </div>
+                {% if bill.total > bill.amount_paid %}
                 <div>
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-check-circle me-1"></i> Update Payment
                     </button>
                 </div>
+                {% else %}
+                <div>
+                    <div class="alert alert-success mb-0">
+                        <i class="bi bi-check-circle-fill me-1"></i> This bill is fully paid
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </form>
     </div>
 </div>
+
+{% if bill.total > bill.amount_paid %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const paymentInput = document.getElementById('new_payment');
+        const remainingText = document.getElementById('remainingAmountText');
+        const pendingAmount = {{ bill.total - bill.amount_paid }};
+        
+        // Handle quick payment buttons
+        document.querySelectorAll('.quick-payment').forEach(button => {
+            button.addEventListener('click', function() {
+                const amount = parseFloat(this.getAttribute('data-amount'));
+                paymentInput.value = amount.toFixed(2);
+            });
+        });
+        
+        // Update remaining amount text when payment input changes
+        paymentInput.addEventListener('input', function() {
+            const inputValue = parseFloat(this.value) || 0;
+            
+            if (inputValue > pendingAmount) {
+                this.value = pendingAmount.toFixed(2);
+                remainingText.innerHTML = `<span class="text-danger">Maximum payment amount: ₹${pendingAmount.toFixed(2)}</span>`;
+            } else if (inputValue <= 0) {
+                remainingText.innerHTML = `<span class="text-danger">Please enter a valid amount greater than 0</span>`;
+            } else {
+                const remaining = pendingAmount - inputValue;
+                remainingText.innerHTML = `After this payment, ₹${remaining.toFixed(2)} will remain to be paid`;
+            }
+        });
+    });
+</script>
+{% endif %}
 {% endblock %}
