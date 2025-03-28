@@ -3,33 +3,89 @@
 {% block content %}
 <div class="card">
     <div class="card-header">
-        <h2>Update Payment - Bill #{{ bill.bill_number }}</h2>
+        <h2 class="h4 h2-md">Update Payment</h2>
+        <p class="small mb-0 text-muted">Bill #{{ bill.bill_number }} - {{ bill.client_name }}</p>
     </div>
     <div class="card-body">
+        <!-- Bill summary card - visible on mobile only -->
+        <div class="d-md-none mb-3">
+            <div class="card bg-light">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between">
+                        <div class="text-muted">Status:</div>
+                        <span class="badge {% if bill.payment_status == 'paid' %}bg-success{% elif bill.payment_status == 'partial' %}bg-warning{% else %}bg-danger{% endif %}">
+                            {{ bill.payment_status.title() }}
+                        </span>
+                    </div>
+                    <hr class="my-2">
+                    <div class="row g-2 text-center">
+                        <div class="col-4">
+                            <div class="small text-muted">Total</div>
+                            <div class="fw-bold">₹{{ '%.2f'|format(bill.total) }}</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="small text-muted">Paid</div>
+                            <div class="fw-bold">₹{{ '%.2f'|format(bill.amount_paid) }}</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="small text-muted">Pending</div>
+                            <div class="fw-bold text-danger">₹{{ '%.2f'|format(bill.total - bill.amount_paid) }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <form action="{{ url_for('update_payment', bill_id=bill.id) }}" method="POST">
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <label class="form-label">Total Amount</label>
-                    <input type="text" class="form-control" value="₹{{ '%.2f'|format(bill.total) }}" readonly>
+            <!-- Desktop version of the form - hidden on mobile -->
+            <div class="d-none d-md-block">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Total Amount</label>
+                        <input type="text" class="form-control" value="₹{{ '%.2f'|format(bill.total) }}" readonly>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Current Amount Paid</label>
+                        <input type="text" class="form-control" value="₹{{ '%.2f'|format(bill.amount_paid) }}" readonly>
+                    </div>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label">Current Amount Paid</label>
-                    <input type="text" class="form-control" value="₹{{ '%.2f'|format(bill.amount_paid) }}" readonly>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Pending Amount</label>
+                        <input type="text" class="form-control" value="₹{{ '%.2f'|format(bill.total - bill.amount_paid) }}" readonly>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="new_payment_desktop" class="form-label">Additional Payment Amount</label>
+                        <input type="number" class="form-control" id="new_payment_desktop" name="new_payment" min="0" step="0.01" max="{{ bill.total - bill.amount_paid }}" required>
+                    </div>
                 </div>
             </div>
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <label class="form-label">Pending Amount</label>
-                    <input type="text" class="form-control" value="₹{{ '%.2f'|format(bill.total - bill.amount_paid) }}" readonly>
-                </div>
-                <div class="col-md-6">
-                    <label for="new_payment" class="form-label">Additional Payment Amount</label>
-                    <input type="number" class="form-control" id="new_payment" name="new_payment" min="0" step="0.01" max="{{ bill.total - bill.amount_paid }}" required>
+
+            <!-- Mobile version of the form - visible only on mobile -->
+            <div class="d-md-none">
+                <div class="mb-3">
+                    <label for="new_payment_mobile" class="form-label">
+                        <i class="bi bi-cash me-1"></i> Enter Payment Amount
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text">₹</span>
+                        <input type="number" class="form-control" id="new_payment_mobile" name="new_payment" min="0" step="0.01" max="{{ bill.total - bill.amount_paid }}" required>
+                    </div>
+                    <div class="form-text">Maximum amount: ₹{{ '%.2f'|format(bill.total - bill.amount_paid) }}</div>
                 </div>
             </div>
-            <div class="text-end">
-                <a href="{{ url_for('bills') }}" class="btn btn-secondary">Cancel</a>
-                <button type="submit" class="btn btn-primary">Update Payment</button>
+
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
+                <div class="mb-3 mb-md-0">
+                    <a href="{{ url_for('bills') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i> Back to Bills
+                    </a>
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-1"></i> Update Payment
+                    </button>
+                </div>
             </div>
         </form>
     </div>

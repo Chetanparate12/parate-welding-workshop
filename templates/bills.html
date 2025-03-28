@@ -2,16 +2,17 @@
 
 {% block content %}
 <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <div>
-            <h2>Generated Bills</h2>
-            <small class="text-success"><i class="bi bi-check-circle-fill"></i> Bills are permanently saved</small>
+    <div class="card-header">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-2">
+            <div>
+                <h2>Generated Bills</h2>
+                <small class="text-success"><i class="bi bi-check-circle-fill"></i> Bills are permanently saved</small>
+            </div>
+            <a href="{{ url_for('payment_history') }}" class="btn btn-info mt-2 mt-md-0">View Payment History</a>
         </div>
-        <a href="{{ url_for('payment_history') }}" class="btn btn-info">View Payment History</a>
-    </div>
-    <div class="card-body">
+        
         <!-- Search form -->
-        <form action="{{ url_for('bills') }}" method="GET" class="mb-4">
+        <form action="{{ url_for('bills') }}" method="GET" class="mt-3">
             <div class="input-group">
                 <input type="text" name="search" class="form-control" placeholder="Search by client name..." value="{{ search_query or '' }}">
                 <button type="submit" class="btn btn-primary">Search</button>
@@ -20,37 +21,92 @@
                 {% endif %}
             </div>
         </form>
+    </div>
+    
+    <div class="card-body p-0 p-md-3">
+        <!-- Desktop view (table) - Hidden on mobile -->
+        <div class="d-none d-md-block">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Bill Number</th>
+                            <th>Client Name</th>
+                            <th>Date</th>
+                            <th>Total</th>
+                            <th>Paid</th>
+                            <th>Pending</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bill in bills %}
+                        <tr>
+                            <td>{{ bill.bill_number }}</td>
+                            <td>{{ bill.client_name }}</td>
+                            <td>
+                                {% if bill.date is string %}
+                                    {{ bill.date.split('T')[0] }}
+                                {% else %}
+                                    {{ bill.date.strftime('%Y-%m-%d') }}
+                                {% endif %}
+                            </td>
+                            <td>₹{{ "%.2f"|format(bill.total) }}</td>
+                            <td>₹{{ "%.2f"|format(bill.amount_paid) }}</td>
+                            <td>₹{{ "%.2f"|format(bill.total - bill.amount_paid) }}</td>
+                            <td>
+                                <span class="badge {% if bill.payment_status == 'paid' %}bg-success{% elif bill.payment_status == 'partial' %}bg-warning{% else %}bg-danger{% endif %}">
+                                    {% if bill.payment_status is string %}
+                                        {{ bill.payment_status.title() }}
+                                    {% else %}
+                                        {{ bill.payment_status }}
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    {% if bill.id %}
+                                        <a href="{{ url_for('download_pdf', bill_id=bill.id) }}" class="btn btn-sm btn-secondary">
+                                            Download
+                                        </a>
+                                        {% if bill.payment_status != 'paid' %}
+                                        <div class="btn-group">
+                                            <a href="{{ url_for('edit_bill', bill_id=bill.id) }}" class="btn btn-sm btn-warning">
+                                                Edit
+                                            </a>
+                                            <a href="{{ url_for('edit_payment', bill_id=bill.id) }}" class="btn btn-sm btn-primary">
+                                                Pay
+                                            </a>
+                                        </div>
+                                        {% else %}
+                                        <form action="{{ url_for('delete_bill', bill_id=bill.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this bill?');">
+                                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                        </form>
+                                        {% endif %}
+                                    {% else %}
+                                        <!-- Replit DB backup display only -->
+                                        <button class="btn btn-sm btn-secondary" disabled>
+                                            PDF (Restore DB)
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
         
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Bill Number</th>
-                        <th>Client Name</th>
-                        <th>Date</th>
-                        <th>Total</th>
-                        <th>Amount Paid</th>
-                        <th>Pending Amount</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
+        <!-- Mobile view (cards) - Visible only on mobile -->
+        <div class="d-md-none">
+            {% if bills %}
+                <div class="list-group list-group-flush">
                     {% for bill in bills %}
-                    <tr>
-                        <td>{{ bill.bill_number }}</td>
-                        <td>{{ bill.client_name }}</td>
-                        <td>
-                            {% if bill.date is string %}
-                                {{ bill.date.split('T')[0] }}
-                            {% else %}
-                                {{ bill.date.strftime('%Y-%m-%d') }}
-                            {% endif %}
-                        </td>
-                        <td>₹{{ "%.2f"|format(bill.total) }}</td>
-                        <td>₹{{ "%.2f"|format(bill.amount_paid) }}</td>
-                        <td>₹{{ "%.2f"|format(bill.total - bill.amount_paid) }}</td>
-                        <td>
+                    <div class="list-group-item p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="mb-0">{{ bill.client_name }}</h5>
                             <span class="badge {% if bill.payment_status == 'paid' %}bg-success{% elif bill.payment_status == 'partial' %}bg-warning{% else %}bg-danger{% endif %}">
                                 {% if bill.payment_status is string %}
                                     {{ bill.payment_status.title() }}
@@ -58,40 +114,71 @@
                                     {{ bill.payment_status }}
                                 {% endif %}
                             </span>
-                        </td>
-                        <td>
-                            <div class="btn-group">
-                                {% if bill.id %}
-                                    <a href="{{ url_for('download_pdf', bill_id=bill.id) }}" class="btn btn-sm btn-secondary">
-                                        Download PDF
-                                    </a>
-                                    {% if bill.payment_status != 'paid' %}
-                                    <div class="btn-group">
-                                        <a href="{{ url_for('edit_bill', bill_id=bill.id) }}" class="btn btn-sm btn-warning">
-                                            Edit Bill
-                                        </a>
-                                        <a href="{{ url_for('edit_payment', bill_id=bill.id) }}" class="btn btn-sm btn-primary">
-                                            Update Payment
-                                        </a>
-                                    </div>
-                                    {% else %}
-                                    <form action="{{ url_for('delete_bill', bill_id=bill.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this bill?');">
-                                        <button type="submit" class="btn btn-sm btn-danger">Delete Bill</button>
-                                    </form>
-                                    {% endif %}
+                        </div>
+                        
+                        <div class="mb-2 small text-muted">
+                            <div><strong>Bill #:</strong> {{ bill.bill_number }}</div>
+                            <div><strong>Date:</strong> 
+                                {% if bill.date is string %}
+                                    {{ bill.date.split('T')[0] }}
                                 {% else %}
-                                    <!-- Replit DB backup display only -->
-                                    <button class="btn btn-sm btn-secondary" disabled>
-                                        PDF (Restore DB First)
-                                    </button>
+                                    {{ bill.date.strftime('%Y-%m-%d') }}
                                 {% endif %}
                             </div>
-                        </td>
-                    </tr>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mb-2">
+                            <div>
+                                <div><strong>Total:</strong> ₹{{ "%.2f"|format(bill.total) }}</div>
+                                <div><strong>Paid:</strong> ₹{{ "%.2f"|format(bill.amount_paid) }}</div>
+                                <div><strong>Pending:</strong> ₹{{ "%.2f"|format(bill.total - bill.amount_paid) }}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="btn-group w-100">
+                            {% if bill.id %}
+                                <a href="{{ url_for('download_pdf', bill_id=bill.id) }}" class="btn btn-sm btn-outline-secondary">
+                                    <i data-feather="download" class="feather-sm"></i> PDF
+                                </a>
+                                {% if bill.payment_status != 'paid' %}
+                                    <a href="{{ url_for('edit_bill', bill_id=bill.id) }}" class="btn btn-sm btn-outline-warning">
+                                        <i data-feather="edit" class="feather-sm"></i> Edit
+                                    </a>
+                                    <a href="{{ url_for('edit_payment', bill_id=bill.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i data-feather="dollar-sign" class="feather-sm"></i> Pay
+                                    </a>
+                                {% else %}
+                                    <form action="{{ url_for('delete_bill', bill_id=bill.id) }}" method="POST" class="flex-grow-1" onsubmit="return confirm('Are you sure you want to delete this bill?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+                                            <i data-feather="trash-2" class="feather-sm"></i> Delete
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            {% else %}
+                                <!-- Replit DB backup display only -->
+                                <button class="btn btn-sm btn-outline-secondary" disabled>
+                                    <i data-feather="file" class="feather-sm"></i> PDF (Restore DB)
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
                     {% endfor %}
-                </tbody>
-            </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    No bills found. {% if search_query %}Try a different search term or <a href="{{ url_for('bills') }}">view all bills</a>.{% endif %}
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>
+
+{% block scripts %}
+<script>
+    // Initialize Feather icons
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace({ 'stroke-width': 1.5 });
+    });
+</script>
+{% endblock %}
 {% endblock %}
