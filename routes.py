@@ -363,11 +363,23 @@ def payment_history():
         # Create a model to track payments with date
         from models import PaymentHistory
         
+        # Get the month filter if provided
+        month = request.args.get('month', '')
+        
         # First check if any payment records exist
-        payment_records = PaymentHistory.query.order_by(PaymentHistory.payment_date.desc()).all()
+        if month:
+            # Filter by selected month (format: YYYY-MM)
+            year, month_num = month.split('-')
+            payment_records = PaymentHistory.query.filter(
+                db.extract('year', PaymentHistory.payment_date) == int(year),
+                db.extract('month', PaymentHistory.payment_date) == int(month_num)
+            ).order_by(PaymentHistory.payment_date.desc()).all()
+        else:
+            # Get all payments
+            payment_records = PaymentHistory.query.order_by(PaymentHistory.payment_date.desc()).all()
         
         # If no records but we have bills with payments, create payment history records
-        if len(payment_records) == 0:
+        if len(payment_records) == 0 and not month:
             bills_with_payments = Bill.query.filter(Bill.amount_paid > 0).all()
             for bill in bills_with_payments:
                 # For existing bills, assume payment was made on the bill date
@@ -394,8 +406,28 @@ def payment_history():
             if record.client_name not in clients:
                 clients[record.client_name] = []
             clients[record.client_name].append(record)
+        
+        # Get list of all months with payments for the dropdown
+        all_months = db.session.query(
+            db.extract('year', PaymentHistory.payment_date).label('year'),
+            db.extract('month', PaymentHistory.payment_date).label('month')
+        ).distinct().order_by('year', 'month').all()
+        
+        months_list = []
+        for year_month in all_months:
+            year = int(year_month.year)
+            month_num = int(year_month.month)
+            month_name = datetime(year, month_num, 1).strftime("%B")
+            months_list.append({
+                'value': f"{year}-{month_num:02d}",
+                'label': f"{month_name} {year}"
+            })
             
-        return render_template('payment_history.html', payment_records=payment_records, clients=clients)
+        return render_template('payment_history.html', 
+                              payment_records=payment_records, 
+                              clients=clients,
+                              months=months_list,
+                              selected_month=month)
         
     except Exception as e:
         app.logger.error(f"Error in payment_history route: {str(e)}")
