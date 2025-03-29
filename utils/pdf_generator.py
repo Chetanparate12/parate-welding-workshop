@@ -304,13 +304,12 @@ def generate_pdf(bill, output_path):
     except Exception as e:
         elements.append(Paragraph("Could not retrieve payment history.", normal_style))
     
-    # Footer with terms and contact information
+    # Footer with contact information
     elements.append(Spacer(1, 1*cm))
     elements.append(HorizontalLine(page_width-3*cm, 1, ColorScheme.PRIMARY, 0, 0.3*cm))
     
     footer_text = """
     Thank you for your business! For any questions regarding this invoice, please contact us.
-    Terms: Payment is due within 30 days. Late payments may be subject to a fee.
     """
     
     elements.append(Paragraph(footer_text, info_style))
