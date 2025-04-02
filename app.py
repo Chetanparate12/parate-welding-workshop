@@ -110,6 +110,10 @@ def run_migrations():
     try:
         from migrate_database import migrate_database
         migrate_database()
+        
+        # Run the payment history schema fix
+        from fix_payment_history_schema import fix_payment_history_schema
+        fix_payment_history_schema()
     except Exception as e:
         app.logger.error(f"Error running migrations: {str(e)}")
 

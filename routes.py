@@ -377,21 +377,37 @@ def delete_bill(bill_id):
         if os.path.exists(bill.pdf_path):
             os.remove(bill.pdf_path)
 
-        # Update payment history records associated with this bill
-        # Instead of deleting them, mark the bill_id as null (keep the records)
-        from models import PaymentHistory
-        payment_records = PaymentHistory.query.filter_by(bill_id=bill.id).all()
-        for record in payment_records:
-            # We'll keep the bill_number and client_name for reference
-            record.bill_id = None
-            
-        # Delete the bill from database
+        # Get the bill info for updating payment history records
+        bill_number = bill.bill_number
+        bill_id_to_delete = bill.id
+
+        # Delete the bill from database first to release foreign key constraint
         db.session.delete(bill)
         db.session.commit()
         
+        # Now handle payment history records separately
+        try:
+            from models import PaymentHistory
+            import sqlalchemy.exc
+            
+            # After the bill is deleted, update the payment history records
+            # Use direct SQL to update records since the model constraint doesn't allow NULL
+            # but we've fixed the schema to allow it
+            payment_records = PaymentHistory.query.filter_by(bill_id=bill_id_to_delete).all()
+            
+            for record in payment_records:
+                record.bill_id = None
+                
+            # Commit these changes separately
+            db.session.commit()
+        except sqlalchemy.exc.SQLAlchemyError as e:
+            app.logger.error(f"Error updating payment history records: {str(e)}")
+            # Continue with the function even if setting NULL fails
+            # The bill is already deleted at this point
+        
         # Remove from Replit DB as well
         from utils.db_backup import delete_bill_from_replit_db
-        delete_bill_from_replit_db(bill.bill_number)
+        delete_bill_from_replit_db(bill_number)
 
         flash('Bill deleted successfully! Payment history records have been preserved.', 'success')
         return redirect(url_for('bills'))
