@@ -370,12 +370,14 @@ def delete_bill(bill_id):
         if os.path.exists(bill.pdf_path):
             os.remove(bill.pdf_path)
 
-        # Delete payment history records associated with this bill
+        # Update payment history records associated with this bill
+        # Instead of deleting them, mark the bill_id as null (keep the records)
         from models import PaymentHistory
         payment_records = PaymentHistory.query.filter_by(bill_id=bill.id).all()
         for record in payment_records:
-            db.session.delete(record)
-
+            # We'll keep the bill_number and client_name for reference
+            record.bill_id = None
+            
         # Delete the bill from database
         db.session.delete(bill)
         db.session.commit()
@@ -384,11 +386,12 @@ def delete_bill(bill_id):
         from utils.db_backup import delete_bill_from_replit_db
         delete_bill_from_replit_db(bill.bill_number)
 
-        flash('Bill and payment history deleted successfully!', 'success')
+        flash('Bill deleted successfully! Payment history records have been preserved.', 'success')
         return redirect(url_for('bills'))
 
     except Exception as e:
         app.logger.error(f"Error deleting bill: {str(e)}")
+        db.session.rollback()
         flash('Error deleting bill. Please try again.', 'danger')
         return redirect(url_for('bills'))
 
@@ -401,17 +404,20 @@ def payment_history():
         # Get the month filter if provided
         month = request.args.get('month', '')
         
+        # Only include non-deleted records
+        base_query = PaymentHistory.query.filter_by(deleted=False)
+        
         # First check if any payment records exist
         if month:
             # Filter by selected month (format: YYYY-MM)
             year, month_num = month.split('-')
-            payment_records = PaymentHistory.query.filter(
+            payment_records = base_query.filter(
                 db.extract('year', PaymentHistory.payment_date) == int(year),
                 db.extract('month', PaymentHistory.payment_date) == int(month_num)
             ).order_by(PaymentHistory.payment_date.desc()).all()
         else:
             # Get all payments
-            payment_records = PaymentHistory.query.order_by(PaymentHistory.payment_date.desc()).all()
+            payment_records = base_query.order_by(PaymentHistory.payment_date.desc()).all()
         
         # If no records but we have bills with payments, create payment history records
         if len(payment_records) == 0 and not month:
@@ -430,7 +436,7 @@ def payment_history():
             try:
                 db.session.commit()
                 # Refresh payment records
-                payment_records = PaymentHistory.query.order_by(PaymentHistory.payment_date.desc()).all()
+                payment_records = base_query.order_by(PaymentHistory.payment_date.desc()).all()
             except Exception as e:
                 db.session.rollback()
                 app.logger.error(f"Error creating payment history: {str(e)}")
@@ -442,11 +448,11 @@ def payment_history():
                 clients[record.client_name] = []
             clients[record.client_name].append(record)
         
-        # Get list of all months with payments for the dropdown
+        # Get list of all months with payments for the dropdown (only include non-deleted records)
         all_months = db.session.query(
             db.extract('year', PaymentHistory.payment_date).label('year'),
             db.extract('month', PaymentHistory.payment_date).label('month')
-        ).distinct().order_by('year', 'month').all()
+        ).filter_by(deleted=False).distinct().order_by('year', 'month').all()
         
         months_list = []
         for year_month in all_months:
@@ -468,3 +474,23 @@ def payment_history():
         app.logger.error(f"Error in payment_history route: {str(e)}")
         flash('Error loading payment history. Please try again.', 'danger')
         return redirect(url_for('bills'))
+
+@app.route('/delete_payment/<int:payment_id>', methods=['POST'])
+def delete_payment(payment_id):
+    try:
+        # Get the payment record
+        from models import PaymentHistory
+        payment = PaymentHistory.query.get_or_404(payment_id)
+        
+        # Soft delete - mark as deleted rather than removing from database
+        payment.deleted = True
+        db.session.commit()
+        
+        flash('Payment record has been deleted successfully.', 'success')
+        return redirect(url_for('payment_history'))
+    
+    except Exception as e:
+        app.logger.error(f"Error deleting payment record: {str(e)}")
+        db.session.rollback()
+        flash('Error deleting payment record. Please try again.', 'danger')
+        return redirect(url_for('payment_history'))

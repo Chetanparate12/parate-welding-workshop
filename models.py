@@ -16,8 +16,9 @@ class Bill(db.Model):
     
 class PaymentHistory(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    bill_id = db.Column(db.Integer, db.ForeignKey('bill.id'), nullable=False)
+    bill_id = db.Column(db.Integer, db.ForeignKey('bill.id', ondelete='SET NULL'), nullable=True)
     bill_number = db.Column(db.String(20), nullable=False) 
     client_name = db.Column(db.String(100), nullable=False)
     payment_date = db.Column(db.DateTime, default=datetime.utcnow)
     amount = db.Column(db.Float, nullable=False)
+    deleted = db.Column(db.Boolean, default=False)  # To mark records as deleted without actually removing them
