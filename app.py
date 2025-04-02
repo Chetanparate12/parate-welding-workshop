@@ -20,12 +20,24 @@ sqlite_path = "instance/bills.db"
 # Always preserve the database - removed the code that deletes it
 
 # Use a persistent database path for deployment
+database_url = os.environ.get("DATABASE_URL")
+
+# Railway deployment detection
+is_railway = bool(os.environ.get("RAILWAY_ENVIRONMENT"))
+
 if os.environ.get("REPLIT_DEPLOYMENT") == "1":
-    # In deployment, use a fixed path for persistence
+    # In Replit deployment, use a fixed path for persistence
     os.makedirs("/home/runner/appdata", exist_ok=True)
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:////home/runner/appdata/bills.db"
+elif is_railway and database_url:
+    # Fix for PostgreSQL URL format in some environments
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+    app.logger.info("Using Railway PostgreSQL database")
 else:
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///bills.db")
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url or "sqlite:///bills.db"
+    app.logger.info(f"Using database: {app.config['SQLALCHEMY_DATABASE_URI']}")
 
 # Set environment variable to indicate deployment status
 if os.environ.get("REPLIT_DEPLOYMENT") != "1":

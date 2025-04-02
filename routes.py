@@ -8,16 +8,23 @@ from models import Bill
 from utils.pdf_generator import generate_pdf
 
 # Set up a persistent folder for PDFs in deployment
+is_railway = bool(os.environ.get("RAILWAY_ENVIRONMENT"))
+
 if os.environ.get("REPLIT_DEPLOYMENT") == "1":
+    # Replit deployment path
     UPLOAD_FOLDER = '/home/runner/appdata/generated_pdfs'
+elif is_railway:
+    # Railway deployment - use a volume or consistent storage path
+    UPLOAD_FOLDER = os.environ.get("PDF_STORAGE_PATH", '/app/generated_pdfs')
 else:
+    # Local development
     UPLOAD_FOLDER = 'generated_pdfs'
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-print(f"Using persistent storage path: {UPLOAD_FOLDER}")
-print(f"Deployment mode: {os.environ.get('REPLIT_DEPLOYMENT')}")
+app.logger.info(f"Using persistent storage path: {UPLOAD_FOLDER}")
+app.logger.info(f"Deployment mode: {'Railway' if is_railway else ('Replit' if os.environ.get('REPLIT_DEPLOYMENT') == '1' else 'Local')}")
 
 @app.route('/')
 def index():

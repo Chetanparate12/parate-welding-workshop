@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  web:
+    build: .
+    command: gunicorn main:app --bind 0.0.0.0:$PORT
+    ports:
+      - "$PORT:$PORT"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - FLASK_ENV=production
+    volumes:
+      - pdf_storage:/app/generated_pdfs
+      - db_storage:/app/instance
+
+volumes:
+  pdf_storage:
+  db_storage:
