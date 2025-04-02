@@ -2,12 +2,11 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy application code
+# Copy application code first to access railway_requirements.txt
 COPY . .
+
+# Install dependencies (using the railway_requirements.txt file)
+RUN pip install --no-cache-dir -r railway_requirements.txt
 
 # Create directories for PDF storage and database
 RUN mkdir -p generated_pdfs
@@ -17,6 +16,7 @@ RUN mkdir -p instance
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV FLASK_ENV=production
+ENV RAILWAY_ENVIRONMENT=1
 
 # Expose the port
 EXPOSE $PORT
