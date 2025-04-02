@@ -400,24 +400,60 @@ def payment_history():
     try:
         # Create a model to track payments with date
         from models import PaymentHistory
+        from sqlalchemy.exc import OperationalError
         
         # Get the month filter if provided
         month = request.args.get('month', '')
         
-        # Only include non-deleted records
-        base_query = PaymentHistory.query.filter_by(deleted=False)
-        
-        # First check if any payment records exist
-        if month:
-            # Filter by selected month (format: YYYY-MM)
-            year, month_num = month.split('-')
-            payment_records = base_query.filter(
-                db.extract('year', PaymentHistory.payment_date) == int(year),
-                db.extract('month', PaymentHistory.payment_date) == int(month_num)
-            ).order_by(PaymentHistory.payment_date.desc()).all()
-        else:
-            # Get all payments
-            payment_records = base_query.order_by(PaymentHistory.payment_date.desc()).all()
+        # Try to filter by deleted=False, but handle the case where the column doesn't exist yet
+        try:
+            # Only include non-deleted records if the column exists
+            base_query = PaymentHistory.query.filter_by(deleted=False)
+            
+            # First check if any payment records exist
+            if month:
+                # Filter by selected month (format: YYYY-MM)
+                year, month_num = month.split('-')
+                payment_records = base_query.filter(
+                    db.extract('year', PaymentHistory.payment_date) == int(year),
+                    db.extract('month', PaymentHistory.payment_date) == int(month_num)
+                ).order_by(PaymentHistory.payment_date.desc()).all()
+            else:
+                # Get all payments
+                payment_records = base_query.order_by(PaymentHistory.payment_date.desc()).all()
+                
+            # Get list of all months with payments for the dropdown (only include non-deleted records if possible)
+            all_months = db.session.query(
+                db.extract('year', PaymentHistory.payment_date).label('year'),
+                db.extract('month', PaymentHistory.payment_date).label('month')
+            ).filter_by(deleted=False).distinct().order_by('year', 'month').all()
+            
+        except OperationalError as e:
+            # If the column doesn't exist, just get all records without filtering
+            app.logger.warning("The 'deleted' column doesn't exist yet. Getting all records.")
+            
+            # Get all records without filtering by deleted
+            base_query = PaymentHistory.query
+            
+            if month:
+                # Filter by selected month (format: YYYY-MM)
+                year, month_num = month.split('-')
+                payment_records = base_query.filter(
+                    db.extract('year', PaymentHistory.payment_date) == int(year),
+                    db.extract('month', PaymentHistory.payment_date) == int(month_num)
+                ).order_by(PaymentHistory.payment_date.desc()).all()
+            else:
+                # Get all payments
+                payment_records = base_query.order_by(PaymentHistory.payment_date.desc()).all()
+                
+            # Get list of all months without filtering by deleted
+            all_months = db.session.query(
+                db.extract('year', PaymentHistory.payment_date).label('year'),
+                db.extract('month', PaymentHistory.payment_date).label('month')
+            ).distinct().order_by('year', 'month').all()
+            
+            # Add the deleted column to the table - this will be done through the models when the app restarts
+            # but we need to handle the current request gracefully
         
         # If no records but we have bills with payments, create payment history records
         if len(payment_records) == 0 and not month:
@@ -448,12 +484,6 @@ def payment_history():
                 clients[record.client_name] = []
             clients[record.client_name].append(record)
         
-        # Get list of all months with payments for the dropdown (only include non-deleted records)
-        all_months = db.session.query(
-            db.extract('year', PaymentHistory.payment_date).label('year'),
-            db.extract('month', PaymentHistory.payment_date).label('month')
-        ).filter_by(deleted=False).distinct().order_by('year', 'month').all()
-        
         months_list = []
         for year_month in all_months:
             year = int(year_month.year)
@@ -480,13 +510,21 @@ def delete_payment(payment_id):
     try:
         # Get the payment record
         from models import PaymentHistory
+        from sqlalchemy.exc import OperationalError
         payment = PaymentHistory.query.get_or_404(payment_id)
         
-        # Soft delete - mark as deleted rather than removing from database
-        payment.deleted = True
-        db.session.commit()
+        try:
+            # Try to mark as deleted - this will work if the column exists
+            payment.deleted = True
+            db.session.commit()
+            flash('Payment record has been deleted successfully.', 'success')
+        except OperationalError as e:
+            # If the column doesn't exist, do a hard delete for now
+            app.logger.warning("The 'deleted' column doesn't exist yet. Doing hard delete.")
+            db.session.delete(payment)
+            db.session.commit()
+            flash('Payment record has been permanently deleted.', 'success')
         
-        flash('Payment record has been deleted successfully.', 'success')
         return redirect(url_for('payment_history'))
     
     except Exception as e:

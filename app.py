@@ -92,7 +92,16 @@ def create_tables():
         except Exception as e:
             app.logger.info("Creating PaymentHistory table")
             db.create_all()
+            
+def run_migrations():
+    """Run any pending database migrations"""
+    try:
+        from migrate_database import migrate_database
+        migrate_database()
+    except Exception as e:
+        app.logger.error(f"Error running migrations: {str(e)}")
 
 with app.app_context():
     create_tables()
+    run_migrations()
     restore_from_replit_db()
