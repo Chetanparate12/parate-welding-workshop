@@ -118,6 +118,17 @@ def run_migrations():
     except Exception as e:
         app.logger.error(f"Error running migrations: {str(e)}")
 
+# Update upload folder path for Render compatibility
+if os.environ.get("RENDER") == "1":
+    UPLOAD_FOLDER = '/tmp/uploads'
+else:
+    UPLOAD_FOLDER = 'uploads'
+
+# Create upload directory with proper permissions
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
 with app.app_context():
     create_tables()
     run_migrations()
