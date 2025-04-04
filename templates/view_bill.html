@@ -1,0 +1,142 @@
+{% extends 'layout.html' %}
+
+{% block title %}Bill #{{ bill.bill_number }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-file-invoice me-2"></i>Bill #{{ bill.bill_number }}
+                        {% if bill.payment_status == 'paid' %}
+                            <span class="badge bg-success float-end">Paid</span>
+                        {% elif bill.payment_status == 'partial' %}
+                            <span class="badge bg-warning float-end">Partially Paid</span>
+                        {% else %}
+                            <span class="badge bg-danger float-end">Pending</span>
+                        {% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Client Information</h5>
+                            <p><strong>Name:</strong> {{ bill.client_name }}</p>
+                            <p><strong>Phone:</strong> {{ bill.phone_number }}</p>
+                            <p><strong>Date:</strong> {{ bill.date.strftime('%d %b, %Y') }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Payment Information</h5>
+                            <div class="mb-2">
+                                {% set percentage = (bill.amount_paid / bill.total * 100) | round | int %}
+                                <div class="progress" style="height: 25px;">
+                                    {% if bill.payment_status == 'paid' %}
+                                        <div class="progress-bar bg-success" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
+                                            Fully Paid
+                                        </div>
+                                    {% elif bill.payment_status == 'partial' %}
+                                        <div class="progress-bar bg-warning" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ percentage }}" aria-valuemin="0" aria-valuemax="100">
+                                            {{ percentage }}% Paid
+                                        </div>
+                                    {% else %}
+                                        <div class="progress-bar bg-danger" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                            0% Paid
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <p><strong>Total Amount:</strong> ₹{{ bill.total | round(2) }}</p>
+                            <p><strong>Amount Paid:</strong> ₹{{ bill.amount_paid | round(2) }}</p>
+                            <p><strong>Balance Due:</strong> ₹{{ (bill.total - bill.amount_paid) | round(2) }}</p>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <h5>Items</h5>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Unit</th>
+                                    <th>Quantity</th>
+                                    <th>Price (₹)</th>
+                                    <th>Amount (₹)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in bill.items %}
+                                <tr>
+                                    <td>{{ item.name }}</td>
+                                    <td>{{ item.unit }}</td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>{{ item.price | round(2) }}</td>
+                                    <td>{{ item.amount | round(2) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-secondary">
+                                    <td colspan="4" class="text-end"><strong>Subtotal:</strong></td>
+                                    <td>₹{{ bill.subtotal | round(2) }}</td>
+                                </tr>
+                                <tr class="table-dark">
+                                    <td colspan="4" class="text-end"><strong>Total:</strong></td>
+                                    <td><strong>₹{{ bill.total | round(2) }}</strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    
+                    {% if payment_records %}
+                    <hr>
+                    <h5>Payment History</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead class="table-primary">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Amount (₹)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in payment_records %}
+                                <tr>
+                                    <td>{{ record.payment_date.strftime('%d %b, %Y') }}</td>
+                                    <td>{{ record.amount | round(2) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-info">
+                                    <td><strong>Total Paid:</strong></td>
+                                    <td><strong>₹{{ bill.amount_paid | round(2) }}</strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    {% endif %}
+                    
+                </div>
+                <div class="card-footer text-muted">
+                    <div class="text-center">
+                        <p class="mb-1">This is an electronically generated bill.</p>
+                        <p class="mb-0"><strong>Parate Welding Workshop</strong></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12 text-center mb-4">
+            <a href="{{ url_for('download_pdf', bill_id=bill.id) }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-download me-2"></i> Download PDF
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -6,6 +6,20 @@ from app import app, db
 # Login route removed
 from models import Bill
 from utils.pdf_generator import generate_pdf
+from utils.qrcode_generator import generate_bill_qrcode
+
+# Get the application domain for QR code generation
+def get_app_domain():
+    """Get the application domain for QR code generation"""
+    if os.environ.get("REPLIT_DEPLOYMENT") == "1":
+        # Replit deployment - use the Replit domain
+        return f"https://{os.environ.get('REPLIT_DOMAINS', '').split(',')[0]}"
+    elif os.environ.get("RAILWAY_ENVIRONMENT"):
+        # Railway deployment
+        return os.environ.get("APP_DOMAIN", "https://your-app-domain.com")
+    else:
+        # Local development - use localhost
+        return "http://localhost:5000"
 
 # Set up a persistent folder for PDFs in deployment
 is_railway = bool(os.environ.get("RAILWAY_ENVIRONMENT"))
@@ -78,8 +92,17 @@ def bills():
         # Add environment variable to ensure database is always preserved
         if os.environ.get("PRESERVE_DB") != "1":
             os.environ["PRESERVE_DB"] = "1"
+        
+        # Generate QR codes for each bill
+        qr_codes = {}
+        base_url = get_app_domain()
+        from utils.qrcode_generator import generate_bill_qrcode
+        
+        for bill in all_bills:
+            if bill.id:
+                qr_codes[bill.id] = generate_bill_qrcode(bill.id, base_url)
             
-        return render_template('bills.html', bills=all_bills, search_query=search_query, permanent_storage=True)
+        return render_template('bills.html', bills=all_bills, search_query=search_query, permanent_storage=True, qr_codes=qr_codes)
     except Exception as e:
         app.logger.error(f"Error in bills route: {str(e)}")
         # If all else fails, get bills directly from Replit DB for display
@@ -171,6 +194,30 @@ def download_pdf(bill_id):
         # Continue with download even if regeneration fails
     
     return send_file(bill.pdf_path, as_attachment=True)
+
+@app.route('/view_bill/<int:bill_id>')
+def view_bill(bill_id):
+    """
+    Public facing route to view a bill using a QR code
+    This route doesn't require authentication and shows limited bill information
+    """
+    try:
+        bill = Bill.query.get_or_404(bill_id)
+        
+        # Get payment records for this bill
+        from models import PaymentHistory
+        
+        # Filter by both bill_id and bill_number to ensure we get all relevant payment records
+        payment_records = PaymentHistory.query.filter(
+            (PaymentHistory.bill_id == bill.id) | 
+            ((PaymentHistory.bill_id == None) & (PaymentHistory.bill_number == bill.bill_number))
+        ).filter_by(deleted=False).order_by(PaymentHistory.payment_date).all()
+        
+        # For QR code scanning, we don't need to check for authentication
+        return render_template('view_bill.html', bill=bill, payment_records=payment_records)
+    except Exception as e:
+        app.logger.error(f"Error viewing bill via QR code: {str(e)}")
+        return render_template('error.html', message="Could not load the requested bill.")
 
 @app.route('/edit_payment/<int:bill_id>')
 def edit_payment(bill_id):
