@@ -169,7 +169,7 @@
                                     <i data-feather="download" class="feather-sm"></i> PDF
                                 </a>
                                 <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#qrModal{{ bill.id }}">
-                                    <i data-feather="qr-code" class="feather-sm"></i> QR
+                                    <i class="bi bi-qr-code"></i> QR
                                 </button>
                                 {% if bill.payment_status != 'paid' %}
                                     <a href="{{ url_for('edit_bill', bill_id=bill.id) }}" class="btn btn-sm btn-outline-warning">
