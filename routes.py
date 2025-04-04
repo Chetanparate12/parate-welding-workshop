@@ -157,6 +157,19 @@ def generate_bill():
 @app.route('/download_pdf/<int:bill_id>')
 def download_pdf(bill_id):
     bill = Bill.query.get_or_404(bill_id)
+    
+    # Always regenerate the PDF to ensure it has the latest payment information
+    # This ensures the PDF shows the most up-to-date payment history
+    try:
+        # Generate the PDF with the same filename to override the existing one
+        pdf_filename = f"{bill.client_name.replace(' ', '_')}_{bill.bill_number}.pdf"
+        pdf_path = os.path.join(UPLOAD_FOLDER, pdf_filename)
+        generate_pdf(bill, pdf_path)
+        app.logger.info(f"Regenerated PDF for bill {bill.bill_number} before download")
+    except Exception as e:
+        app.logger.error(f"Error regenerating PDF before download: {str(e)}")
+        # Continue with download even if regeneration fails
+    
     return send_file(bill.pdf_path, as_attachment=True)
 
 @app.route('/edit_payment/<int:bill_id>')

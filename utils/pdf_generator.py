@@ -255,7 +255,13 @@ def generate_pdf(bill, output_path):
     
     # Payment History with improved styling
     try:
-        payment_records = PaymentHistory.query.filter_by(bill_id=bill.id).order_by(PaymentHistory.payment_date).all()
+        # Only fetch payment records directly related to this bill
+        # Use both bill_id and bill_number to ensure we get all relevant records even if some 
+        # have bill_id=NULL due to bill deletions
+        payment_records = PaymentHistory.query.filter(
+            (PaymentHistory.bill_id == bill.id) | 
+            ((PaymentHistory.bill_id == None) & (PaymentHistory.bill_number == bill.bill_number))
+        ).filter_by(deleted=False).order_by(PaymentHistory.payment_date).all()
         
         if payment_records:
             elements.append(Paragraph("PAYMENT HISTORY", heading_style))
@@ -302,7 +308,60 @@ def generate_pdf(bill, output_path):
         else:
             elements.append(Paragraph("No payment records found.", normal_style))
     except Exception as e:
-        elements.append(Paragraph("Could not retrieve payment history.", normal_style))
+        # Handle the case where the 'deleted' column might not exist yet
+        try:
+            # Fallback query without the deleted filter
+            payment_records = PaymentHistory.query.filter(
+                (PaymentHistory.bill_id == bill.id) | 
+                ((PaymentHistory.bill_id == None) & (PaymentHistory.bill_number == bill.bill_number))
+            ).order_by(PaymentHistory.payment_date).all()
+            
+            if payment_records:
+                elements.append(Paragraph("PAYMENT HISTORY", heading_style))
+                elements.append(HorizontalLine(8*cm, 1, ColorScheme.SECONDARY, 0, 0.2*cm))
+                
+                payment_data = [['Date', 'Amount (₹)']]
+                for record in payment_records:
+                    payment_data.append([
+                        record.payment_date.strftime('%d %b, %Y'),
+                        f"{record.amount:.2f}"
+                    ])
+                
+                # Total row
+                payment_data.append(['Total Paid:', f"{bill.amount_paid:.2f}"])
+                
+                payment_table = Table(payment_data, colWidths=[6*cm, 6*cm])
+                payment_table.setStyle(TableStyle([
+                    # Header
+                    ('BACKGROUND', (0, 0), (-1, 0), ColorScheme.TABLE_HEADER),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), ColorScheme.WHITE),
+                    ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, 0), 10),
+                    ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+                    ('TOPPADDING', (0, 0), (-1, 0), 8),
+                    
+                    # Data rows
+                    ('FONTNAME', (0, 1), (-1, -2), 'Helvetica'),
+                    ('FONTSIZE', (0, 1), (-1, -1), 9),
+                    ('ALIGN', (0, 1), (0, -1), 'LEFT'),
+                    ('ALIGN', (1, 1), (1, -1), 'RIGHT'),
+                    ('GRID', (0, 0), (-1, -2), 0.5, ColorScheme.TABLE_BORDER),
+                    
+                    # Alternating rows
+                    ('ROWBACKGROUNDS', (0, 1), (-1, -2), [ColorScheme.TABLE_ROW_ODD, ColorScheme.TABLE_ROW_EVEN]),
+                    
+                    # Total row
+                    ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+                    ('LINEABOVE', (0, -1), (-1, -1), 1, ColorScheme.DARK),
+                    ('ALIGN', (0, -1), (0, -1), 'RIGHT'),
+                ]))
+                
+                elements.append(payment_table)
+            else:
+                elements.append(Paragraph("No payment records found.", normal_style))
+        except Exception as nested_e:
+            elements.append(Paragraph("Could not retrieve payment history.", normal_style))
     
     # Footer with contact information
     elements.append(Spacer(1, 1*cm))
