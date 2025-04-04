@@ -17,12 +17,16 @@ def get_app_domain():
     elif os.environ.get("RAILWAY_ENVIRONMENT"):
         # Railway deployment
         return os.environ.get("APP_DOMAIN", "https://your-app-domain.com")
+    elif os.environ.get("RENDER"):
+        # Render deployment - use the Render domain
+        return f"https://{os.environ.get('RENDER_EXTERNAL_HOSTNAME')}"
     else:
         # Local development - use localhost
         return "http://localhost:5000"
 
 # Set up a persistent folder for PDFs in deployment
 is_railway = bool(os.environ.get("RAILWAY_ENVIRONMENT"))
+is_render = bool(os.environ.get("RENDER"))
 
 if os.environ.get("REPLIT_DEPLOYMENT") == "1":
     # Replit deployment path
@@ -30,6 +34,9 @@ if os.environ.get("REPLIT_DEPLOYMENT") == "1":
 elif is_railway:
     # Railway deployment - use a volume or consistent storage path
     UPLOAD_FOLDER = os.environ.get("PDF_STORAGE_PATH", '/app/generated_pdfs')
+elif is_render:
+    # Render deployment - use the persistent disk path
+    UPLOAD_FOLDER = os.environ.get("PDF_STORAGE_PATH", '/var/data/generated_pdfs')
 else:
     # Local development
     UPLOAD_FOLDER = 'generated_pdfs'
@@ -38,7 +45,7 @@ if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 app.logger.info(f"Using persistent storage path: {UPLOAD_FOLDER}")
-app.logger.info(f"Deployment mode: {'Railway' if is_railway else ('Replit' if os.environ.get('REPLIT_DEPLOYMENT') == '1' else 'Local')}")
+app.logger.info(f"Deployment mode: {'Railway' if is_railway else ('Render' if is_render else ('Replit' if os.environ.get('REPLIT_DEPLOYMENT') == '1' else 'Local'))}")
 
 @app.route('/')
 def index():
